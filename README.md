@@ -5,7 +5,7 @@ A full-stack text-to-speech web application built with FastAPI (backend) and Rea
 ## Prerequisites
 
 - Python 3.9+
-- Node.js 18+
+- Node.js 20+
 - npm 9+
 
 ## Project Structure
