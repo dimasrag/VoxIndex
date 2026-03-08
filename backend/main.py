@@ -1,0 +1,43 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from app.models import Base, engine
+from app.api import auth as auth_router
+from app.api import voice_refs as voice_refs_router
+from app.api import synthesis as synthesis_router
+from app.api import admin as admin_router
+
+app = FastAPI(title="Voice Synthesis API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+STORAGE_PATH = os.getenv("STORAGE_PATH", "../storage")
+OUTPUTS_PATH = os.path.join(STORAGE_PATH, "outputs")
+VOICE_REFS_PATH = os.path.join(STORAGE_PATH, "voice_refs")
+
+os.makedirs(OUTPUTS_PATH, exist_ok=True)
+os.makedirs(VOICE_REFS_PATH, exist_ok=True)
+
+app.mount("/static/outputs", StaticFiles(directory=OUTPUTS_PATH), name="outputs")
+
+@app.on_event("startup")
+async def startup_event():
+    Base.metadata.create_all(bind=engine)
+    os.makedirs(OUTPUTS_PATH, exist_ok=True)
+    os.makedirs(VOICE_REFS_PATH, exist_ok=True)
+
+app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
+app.include_router(voice_refs_router.router, prefix="/api/voice-refs", tags=["voice-refs"])
+app.include_router(synthesis_router.router, prefix="/api/synthesis", tags=["synthesis"])
+app.include_router(admin_router.router, prefix="/api/admin", tags=["admin"])
