@@ -5,8 +5,9 @@ A full-stack text-to-speech web application built with FastAPI (backend) and Rea
 ## Prerequisites
 
 - Python 3.9+
-- Node.js 20+
-- npm 9+
+- Node.js 20.19+ or 22.12+
+- npm 10+
+- PostgreSQL 14+
 
 ## Project Structure
 
@@ -43,9 +44,13 @@ pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env and set a strong SECRET_KEY
+# Edit .env and set a strong SECRET_KEY and your PostgreSQL credentials:
+#   DATABASE_URL=postgresql://<user>:<password>@<host>:<port>/<dbname>
 
-# Start the server
+# Create the PostgreSQL database (run once)
+psql -U postgres -c "CREATE DATABASE voice_synthesis;"
+
+# Start the server (SQLAlchemy creates tables automatically on first run)
 uvicorn main:app --reload --port 8000
 ```
 

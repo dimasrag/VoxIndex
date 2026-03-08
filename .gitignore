@@ -4,7 +4,6 @@ __pycache__/
 *.pyo
 *.pyd
 .env
-*.db
 venv/
 .venv/
 *.egg-info/
