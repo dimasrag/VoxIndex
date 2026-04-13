@@ -14,9 +14,18 @@ from app.api import admin as admin_router
 
 app = FastAPI(title="Voice Synthesis API")
 
+def _parse_origins(raw_origins: str):
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    return origins or ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+
+frontend_origins = _parse_origins(
+    os.getenv("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=frontend_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

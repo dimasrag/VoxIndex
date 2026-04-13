@@ -9,7 +9,7 @@ from app.models.synthesis import SynthesisJob
 from app.models.voice_ref import VoiceReference
 from app.models.user import User
 from app.services.auth import get_current_user
-from app.services.tts import synthesize
+from app.services.tts import TTSServiceError, synthesize
 
 router = APIRouter()
 
@@ -26,6 +26,12 @@ def create_synthesis(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    cleaned_text = req.text.strip()
+    if not cleaned_text:
+        raise HTTPException(status_code=422, detail="Text must not be empty")
+    if len(cleaned_text) > 2000:
+        raise HTTPException(status_code=422, detail="Text length must be 2000 characters or fewer")
+
     voice_ref = db.query(VoiceReference).filter(
         VoiceReference.id == req.voice_ref_id,
         VoiceReference.user_id == current_user.id,
@@ -40,7 +46,7 @@ def create_synthesis(
     job = SynthesisJob(
         user_id=current_user.id,
         voice_ref_id=voice_ref.id,
-        input_text=req.text,
+        input_text=cleaned_text,
         output_filename=output_filename,
         output_path=output_path,
         status="pending",
@@ -49,11 +55,17 @@ def create_synthesis(
     db.commit()
     db.refresh(job)
 
+    error_message = None
     try:
-        synthesize(req.text, voice_ref.file_path, output_path)
+        synthesize(cleaned_text, voice_ref.file_path, output_path)
         job.status = "completed"
-    except Exception:
+    except TTSServiceError as exc:
+        error_message = str(exc)
         job.status = "failed"
+    except Exception:
+        error_message = "Unexpected synthesis error"
+        job.status = "failed"
+
     db.commit()
     db.refresh(job)
 
@@ -63,6 +75,7 @@ def create_synthesis(
         "output_filename": job.output_filename,
         "input_text": job.input_text,
         "created_at": job.created_at,
+        "error_message": error_message,
     }
 
 @router.get("/")
