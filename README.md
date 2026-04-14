@@ -92,6 +92,21 @@ The app will be available at `http://localhost:5173`.
 
 ## Notes
 
-- The TTS synthesis is currently a stub that copies the voice reference file as output. Replace `backend/app/services/tts.py` with actual IndexTTS2 integration.
+- The backend supports `stub` and `indextts2` synthesis providers. `stub` copies the voice reference as placeholder output for development.
 - Audio files are stored in `storage/voice_refs/` and `storage/outputs/`.
 - JWT tokens expire after 60 minutes by default (configurable via `ACCESS_TOKEN_EXPIRE_MINUTES`).
+
+## TTS Provider Configuration
+
+Backend supports two synthesis providers via `.env`:
+
+- `TTS_PROVIDER=stub`: Development mode (copies voice reference as placeholder output)
+- `TTS_PROVIDER=indextts2`: Uses real IndexTTS2 inference
+
+When using `indextts2`, set:
+
+- `INDEXTTS2_CONFIG_PATH` (default: `checkpoints/config.yaml`)
+- `INDEXTTS2_MODEL_DIR` (default: `checkpoints`)
+- `INDEXTTS2_USE_FP16` (`true`/`false`)
+- `INDEXTTS2_USE_CUDA_KERNEL` (`true`/`false`)
+- `INDEXTTS2_USE_DEEPSPEED` (`true`/`false`)
