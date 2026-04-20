@@ -133,7 +133,21 @@ If these planned features are included in thesis diagrams, mark them as Proposed
 
 ## Notes
 
-- The current TTS implementation is a stub that copies the selected voice reference as placeholder output.
-- Audio files are stored in storage/voice_refs and storage/outputs.
-- JWT tokens expire after 60 minutes by default (configurable via ACCESS_TOKEN_EXPIRE_MINUTES).
-- For real IndexTTS2 integration, replace backend/app/services/tts.py and extend synthesis request/model fields as needed.
+- The backend supports `stub` and `indextts2` synthesis providers. `stub` copies the voice reference as placeholder output for development.
+- Audio files are stored in `storage/voice_refs/` and `storage/outputs/`.
+- JWT tokens expire after 60 minutes by default (configurable via `ACCESS_TOKEN_EXPIRE_MINUTES`).
+
+## TTS Provider Configuration
+
+Backend supports two synthesis providers via `.env`:
+
+- `TTS_PROVIDER=stub`: Development mode (copies voice reference as placeholder output)
+- `TTS_PROVIDER=indextts2`: Uses real IndexTTS2 inference
+
+When using `indextts2`, set:
+
+- `INDEXTTS2_CONFIG_PATH` (default: `checkpoints/config.yaml`)
+- `INDEXTTS2_MODEL_DIR` (default: `checkpoints`)
+- `INDEXTTS2_USE_FP16` (`true`/`false`)
+- `INDEXTTS2_USE_CUDA_KERNEL` (`true`/`false`)
+- `INDEXTTS2_USE_DEEPSPEED` (`true`/`false`)
