@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 from app.models import Base, engine
 from app.api import auth as auth_router
