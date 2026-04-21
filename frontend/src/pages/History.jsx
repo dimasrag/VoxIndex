@@ -17,7 +17,7 @@ export default function History() {
 
   return (
     <div className="page-container">
-      <h1>📋 Synthesis History</h1>
+      <h1>Synthesis History</h1>
       {jobs.length === 0 ? (
         <p className="empty-msg">No synthesis jobs yet.</p>
       ) : (

@@ -18,11 +18,11 @@ export default function Dashboard() {
       <h1>Welcome{user?.username ? `, ${user.username}` : ''}!</h1>
       <div className="dashboard-cards">
         <Link to="/synthesis" className="dashboard-card">
-          <h3>🎙️ New Synthesis</h3>
+          <h3>New Synthesis</h3>
           <p>Generate speech from text</p>
         </Link>
         <Link to="/history" className="dashboard-card">
-          <h3>📋 History</h3>
+          <h3>History</h3>
           <p>View all synthesis jobs</p>
         </Link>
       </div>
