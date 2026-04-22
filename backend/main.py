@@ -39,6 +39,7 @@ os.makedirs(OUTPUTS_PATH, exist_ok=True)
 os.makedirs(VOICE_REFS_PATH, exist_ok=True)
 
 app.mount("/static/outputs", StaticFiles(directory=OUTPUTS_PATH), name="outputs")
+app.mount("/static/voice_refs", StaticFiles(directory=VOICE_REFS_PATH), name="voice_refs")
 
 @app.on_event("startup")
 async def startup_event():
