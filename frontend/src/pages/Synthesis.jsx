@@ -236,11 +236,14 @@ export default function Synthesis() {
             <div className="panel-chip">Synthesis Result</div>
             {result && result.status === 'completed' ? (
               <>
+                <div className="wave-shell">
+                  <Waveform audioUrl={`${apiBase}/static/outputs/${result.output_filename}`} />
+                </div>
                 <audio controls src={`${apiBase}/static/outputs/${result.output_filename}`} className="result-audio" />
                 <div className="audio-controls">
                   <span>0:00</span>
                   <div className="control-buttons">Play Loop Save</div>
-                  <span>0:16</span>
+                  <span>0:13</span>
                 </div>
               </>
             ) : (
