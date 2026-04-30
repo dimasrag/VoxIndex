@@ -85,14 +85,36 @@ const UploadPlaceholder = ({ onFileSelect }) => (
   </div>
 );
 
+const formatTime = (seconds) => {
+  if (!seconds || isNaN(seconds)) return '0:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const getAudioDuration = async (url) => {
+  try {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    audioContext.close();
+    return audioBuffer.duration;
+  } catch (err) {
+    return 0;
+  }
+};
+
 export default function Synthesis() {
   const [voiceRefs, setVoiceRefs] = useState([]);
   const [selectedRef, setSelectedRef] = useState('');
   const [selectedRefUrl, setSelectedRefUrl] = useState('');
+  const [selectedRefDuration, setSelectedRefDuration] = useState(0);
   const [text, setText] = useState('El gato condujo el coche');
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+  const [resultDuration, setResultDuration] = useState(0);
   const [error, setError] = useState('');
   const [emotionControl, setEmotionControl] = useState('same-as-the-voice-reference');
   const [emotions, setEmotions] = useState({
@@ -124,6 +146,28 @@ export default function Synthesis() {
       setSelectedRefUrl('');
     }
   }, [selectedRef, voiceRefs]);
+
+  useEffect(() => {
+    if (selectedRefUrl) {
+      getAudioDuration(selectedRefUrl).then(duration => {
+        setSelectedRefDuration(duration);
+      });
+    } else {
+      setSelectedRefDuration(0);
+    }
+  }, [selectedRefUrl]);
+
+  useEffect(() => {
+    if (result && result.output_filename) {
+      getAudioDuration(`${apiBase}/static/outputs/${result.output_filename}`).then(duration => {
+        setResultDuration(duration);
+      });
+    } else {
+      setResultDuration(0);
+    }
+  }, [result]);
+
+
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -191,7 +235,7 @@ export default function Synthesis() {
                 <div className="audio-controls">
                   <span>0:00</span>
                   <div className="control-buttons">Back Pause Next</div>
-                  <span>0:08</span>
+                  <span>{formatTime(selectedRefDuration)}</span>
                 </div>
               </>
             ) : (
@@ -236,11 +280,14 @@ export default function Synthesis() {
             <div className="panel-chip">Synthesis Result</div>
             {result && result.status === 'completed' ? (
               <>
+                <div className="wave-shell">
+                  <Waveform audioUrl={`${apiBase}/static/outputs/${result.output_filename}`} />
+                </div>
                 <audio controls src={`${apiBase}/static/outputs/${result.output_filename}`} className="result-audio" />
                 <div className="audio-controls">
                   <span>0:00</span>
                   <div className="control-buttons">Play Loop Save</div>
-                  <span>0:16</span>
+                  <span>{formatTime(resultDuration)}</span>
                 </div>
               </>
             ) : (
