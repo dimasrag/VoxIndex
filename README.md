@@ -159,16 +159,16 @@ This application integrates with the IndexTTS2 model but does not include the mo
 Recommended local layout: keep the model repository and checkpoints outside the app repo (sibling folder). Example:
 
 ```
-D:/!Codes/Indextts/index-tts    # IndexTTS2 repo + checkpoints
-D:/!Codes/Indextts/VoxIndex     # This application (this repo)
+../index-tts    # IndexTTS2 repo + checkpoints (sibling folder)
+./              # This application (this repo)
 ```
 
 Quick setup (Windows PowerShell):
 
 ```powershell
-# Clone IndexTTS2 (keep outside this repo)
-git clone https://github.com/IndexTeam/IndexTTS-2.git D:\!Codes\Indextts\index-tts
-cd D:\!Codes\Indextts\index-tts
+# Clone IndexTTS2 (keep outside this repo, as a sibling folder)
+git clone https://github.com/IndexTeam/IndexTTS-2.git ../index-tts
+cd ../index-tts
 
 # (Optional) create a venv for the model environment
 python -m venv .venv
@@ -182,11 +182,11 @@ pip install -e .
 hf download IndexTeam/IndexTTS-2 --local-dir=checkpoints
 ```
 
-After downloading, point the backend env values to the model location (example `backend/.env`):
+After downloading, point the backend env values to the model location (example `backend/.env`). Prefer relative paths when `index-tts` is a sibling folder:
 
 ```
-INDEXTTS2_CONFIG_PATH=D:\!Codes\Indextts\index-tts\checkpoints\config.yaml
-INDEXTTS2_MODEL_DIR=D:\!Codes\Indextts\index-tts\checkpoints
+INDEXTTS2_CONFIG_PATH=../index-tts/checkpoints/config.yaml
+INDEXTTS2_MODEL_DIR=../index-tts/checkpoints
 ```
 
 Security & repo notes:
