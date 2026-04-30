@@ -151,3 +151,45 @@ When using `indextts2`, set:
 - `INDEXTTS2_USE_FP16` (`true`/`false`)
 - `INDEXTTS2_USE_CUDA_KERNEL` (`true`/`false`)
 - `INDEXTTS2_USE_DEEPSPEED` (`true`/`false`)
+
+## IndexTTS2 (Model) Setup
+
+This application integrates with the IndexTTS2 model but does not include the model checkpoints in this repo.
+
+Recommended local layout: keep the model repository and checkpoints outside the app repo (sibling folder). Example:
+
+```
+D:/!Codes/Indextts/index-tts    # IndexTTS2 repo + checkpoints
+D:/!Codes/Indextts/VoxIndex     # This application (this repo)
+```
+
+Quick setup (Windows PowerShell):
+
+```powershell
+# Clone IndexTTS2 (keep outside this repo)
+git clone https://github.com/IndexTeam/IndexTTS-2.git D:\!Codes\Indextts\index-tts
+cd D:\!Codes\Indextts\index-tts
+
+# (Optional) create a venv for the model environment
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+
+# Install model package and dependencies
+pip install -e .
+
+# Use the Hugging Face CLI to download checkpoints into a local `checkpoints/` folder
+# (you need to have 'hf' installed and be logged in if required)
+hf download IndexTeam/IndexTTS-2 --local-dir=checkpoints
+```
+
+After downloading, point the backend env values to the model location (example `backend/.env`):
+
+```
+INDEXTTS2_CONFIG_PATH=D:\!Codes\Indextts\index-tts\checkpoints\config.yaml
+INDEXTTS2_MODEL_DIR=D:\!Codes\Indextts\index-tts\checkpoints
+```
+
+Security & repo notes:
+- Do NOT commit the `index-tts` repo or `checkpoints/` to this repository — they are large and should be kept out of version control.
+- This repo's `.gitignore` already excludes common model files and checkpoints.
+
