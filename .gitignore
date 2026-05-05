@@ -3,6 +3,51 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+.venv/
+env/
+venv/
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Virtualenvs
+.vscode/
+.idea/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build / distribution
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model & checkpoints (do NOT commit large model files)
+checkpoints/
+**/checkpoints/
+*.safetensors
+*.pth
+*.pt
+*.bin
+
+# Storage outputs and uploads (runtime)
+/storage/outputs/
+/storage/voice_refs/
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
 .env
 venv/
 .venv/
