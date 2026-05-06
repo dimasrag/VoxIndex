@@ -4,6 +4,8 @@ A full-stack web application for text-to-speech workflows, built with FastAPI (b
 
 This repository currently runs an end-to-end MVP flow (auth, upload voice reference, synthesis job, history, audio playback/download). The current TTS service is a development stub and can be replaced with real IndexTTS2 inference later.
 
+For a step-by-step startup guide, see [docs/START_HERE.md](docs/START_HERE.md).
+
 ## Tech Stack
 
 - Backend: FastAPI, Uvicorn, SQLAlchemy, python-jose (JWT), passlib (bcrypt)
