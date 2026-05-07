@@ -1,6 +1,9 @@
 import os
 import shutil
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 class TTSServiceError(Exception):
@@ -78,10 +81,13 @@ def synthesize(text: str, voice_ref_path: str, output_path: str, emo_audio_promp
     - TTS_PROVIDER: "stub" (default) or "indextts2"
     """
     provider = os.getenv("TTS_PROVIDER", "stub").strip().lower()
+    logger.info(f"TTS_PROVIDER={provider}")
     if provider == "stub":
+        logger.info("Using stub synthesizer")
         _stub_synthesize(voice_ref_path, output_path)
         return
     if provider == "indextts2":
+        logger.info("Using IndexTTS2 synthesizer")
         _ENGINE.infer(text=text, voice_ref_path=voice_ref_path, output_path=output_path, emo_audio_prompt=emo_audio_prompt)
         return
 
