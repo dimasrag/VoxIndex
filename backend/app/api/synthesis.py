@@ -1,5 +1,6 @@
 import os
 import uuid
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -10,6 +11,8 @@ from app.models.voice_ref import VoiceReference
 from app.models.user import User
 from app.services.auth import get_current_user
 from app.services.tts import TTSServiceError, synthesize
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -26,6 +29,9 @@ def create_synthesis(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    logger.info(f"Synthesis request received: text='{req.text}' voice_ref_id={req.voice_ref_id}")
+    logger.info(f"TTS_PROVIDER env={os.getenv('TTS_PROVIDER', 'NOT SET')}")
+    
     cleaned_text = req.text.strip()
     if not cleaned_text:
         raise HTTPException(status_code=422, detail="Text must not be empty")
@@ -57,12 +63,16 @@ def create_synthesis(
 
     error_message = None
     try:
+        logger.info(f"Calling synthesize with voice_ref={voice_ref.file_path}")
         synthesize(cleaned_text, voice_ref.file_path, output_path)
+        logger.info(f"Synthesis succeeded, status=completed")
         job.status = "completed"
     except TTSServiceError as exc:
+        logger.error(f"TTSServiceError: {exc}")
         error_message = str(exc)
         job.status = "failed"
-    except Exception:
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}", exc_info=True)
         error_message = "Unexpected synthesis error"
         job.status = "failed"
 

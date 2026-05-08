@@ -234,3 +234,39 @@ For you and your friend, the simplest workflow is:
 - Use `backend/` as the working directory for the API server.
 - Use the project venv at your repo's `.venv` when running this repo; `D:\!Codes\Indextts\VoxIndex\.venv` is the example for this workspace.
 - Keep `index-tts/checkpoints/` local; do not commit the model weights.
+
+## 11. Roadmap
+
+This is the recommended order for turning VoxIndex into a real IndexTTS-powered product.
+
+### Phase 1: Keep the app shell stable
+
+- Keep auth, upload, history, and audio download working
+- Make sure the backend can still synthesize with the real model
+- Use the smoke test as the minimum regression check
+
+### Phase 2: Expand the backend contract
+
+- Add support for emotion audio
+- Add support for emotion vectors
+- Add support for `emo_text` and `emo_alpha`
+- Add `use_random` and other advanced inference flags
+- Keep the old simple flow working as the default path
+
+### Phase 3: Build the frontend around the model
+
+- Add a simple mode for normal users
+- Add an advanced mode for model controls
+- Keep the UI clean so the model options do not overwhelm the app
+
+### Phase 4: Polish and compare
+
+- Compare VoxIndex output with the standalone `index-tts` demo
+- Tune defaults for quality and speed
+- Document the final behavior for you and your friend
+
+### Team rule
+
+- IndexTTS stays the engine
+- VoxIndex stays the product
+- Only expose model controls in VoxIndex when the UI really needs them
