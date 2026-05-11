@@ -5,11 +5,8 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-
 class TTSServiceError(Exception):
     """Raised when synthesis cannot be completed due to runtime/configuration issues."""
-
-
 class _IndexTTS2Engine:
     """Lazy-loaded wrapper around IndexTTS2 model initialization and inference."""
 
@@ -49,7 +46,15 @@ class _IndexTTS2Engine:
 
         return self._model
 
-    def infer(self, text: str, voice_ref_path: str, output_path: str, emo_audio_prompt: Optional[str] = None) -> None:
+    def infer(self, text: str, voice_ref_path: str, output_path: str,
+              emo_audio_prompt: Optional[str] = None,
+              emo_vector: Optional[list] = None,
+              emo_alpha: float = 1.0,
+              use_emo_text: bool = False,
+              emo_text: Optional[str] = None,
+              use_random: bool = False,
+              interval_silence: int = 200) -> None:
+        
         model = self._load()
         kwargs = {
             "spk_audio_prompt": voice_ref_path,
@@ -57,8 +62,21 @@ class _IndexTTS2Engine:
             "output_path": output_path,
             "verbose": False,
         }
+        # Add optional emotion parameters
         if emo_audio_prompt:
             kwargs["emo_audio_prompt"] = emo_audio_prompt
+        if emo_vector is not None:
+            kwargs["emo_vector"] = emo_vector
+        if emo_alpha != 1.0:
+            kwargs["emo_alpha"] = emo_alpha
+        if use_emo_text:
+            kwargs["use_emo_text"] = use_emo_text
+        if emo_text:
+            kwargs["emo_text"] = emo_text
+        if use_random:
+            kwargs["use_random"] = use_random
+        if interval_silence != 200:
+            kwargs["interval_silence"] = interval_silence
 
         try:
             model.infer(**kwargs)
@@ -74,7 +92,15 @@ def _stub_synthesize(voice_ref_path: str, output_path: str) -> None:
     shutil.copy2(voice_ref_path, output_path)
 
 
-def synthesize(text: str, voice_ref_path: str, output_path: str, emo_audio_prompt: Optional[str] = None) -> None:
+def synthesize(text: str, voice_ref_path: str, output_path: str,
+               emo_audio_prompt: Optional[str] = None,
+               emo_vector: Optional[list] = None,
+               emo_alpha: float = 1.0,
+               use_emo_text: bool = False,
+               emo_text: Optional[str] = None,
+               use_random: bool = False,
+               interval_silence: int = 200) -> None:
+    
     """Synthesize speech using configured provider.
 
     Env:
@@ -86,9 +112,21 @@ def synthesize(text: str, voice_ref_path: str, output_path: str, emo_audio_promp
         logger.info("Using stub synthesizer")
         _stub_synthesize(voice_ref_path, output_path)
         return
+    
     if provider == "indextts2":
         logger.info("Using IndexTTS2 synthesizer")
-        _ENGINE.infer(text=text, voice_ref_path=voice_ref_path, output_path=output_path, emo_audio_prompt=emo_audio_prompt)
+        _ENGINE.infer(
+            text=text,
+            voice_ref_path=voice_ref_path,
+            output_path=output_path,
+            emo_audio_prompt=emo_audio_prompt,
+            emo_vector=emo_vector,
+            emo_alpha=emo_alpha,
+            use_emo_text=use_emo_text,
+            emo_text=emo_text,
+            use_random=use_random,
+            interval_silence=interval_silence,
+        )
         return
 
     raise TTSServiceError(f"Unsupported TTS_PROVIDER: {provider}")
