@@ -4,6 +4,18 @@ import './Synthesis.css';
 
 const apiBase = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
 
+// Emotion presets: [happy, angry, sad, afraid, disgusted, melancholic, surprised, calm]
+const EMOTION_PRESETS = {
+  neutral: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  happy: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0],
+  sad: [0.0, 0.0, 1.0, 0.0, 0.0, 0.5, 0.0, 0.0],
+  angry: [0.0, 1.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0],
+  calm: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+  excited: [1.0, 0.2, 0.0, 0.0, 0.0, 0.0, 0.8, 0.0],
+  sleepy: [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.5],
+  surprised: [0.5, 0.0, 0.0, 0.3, 0.0, 0.0, 1.0, 0.0],
+};
+
 const Waveform = ({ audioUrl, currentTime, duration, onSeek }) => {
   const canvasRef = useRef(null);
   const ampsRef = useRef([]);
@@ -139,17 +151,11 @@ export default function Synthesis() {
   const [result, setResult] = useState(null);
   const [resultDuration, setResultDuration] = useState(0);
   const [error, setError] = useState('');
-  const [emotionControl, setEmotionControl] = useState('same-as-the-voice-reference');
-  const [emotions, setEmotions] = useState({
-    happy: 0,
-    angry: 0.75,
-    sad: 0,
-    low: 0,
-    hate: 0,
-    surprise: 0,
-    fear: 0,
-    neutral: 0,
-  });
+  // Emotion controls
+  const [emotionControlMethod, setEmotionControlMethod] = useState('emotion_vector'); // 'same_as_ref', 'emotion_audio', 'emotion_vector', 'emotion_text'
+  const [emotionVector, setEmotionVector] = useState([0, 0, 0, 0, 0, 0, 0, 0]); // [happy, angry, sad, afraid, disgusted, melancholic, surprised, calm]
+  const [useRandom, setUseRandom] = useState(false);
+  const [randomIntensity, setRandomIntensity] = useState(0.5);
 
   useEffect(() => {
     apiClient.get('/voice-refs/').then(res => {
@@ -255,7 +261,7 @@ export default function Synthesis() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedRef && emotionControl !== 'use-emotion-vector') { setError('Please select or upload a voice reference'); return; }
+    if (!selectedRef) { setError('Please select or upload a voice reference'); return; }
     if (!text.trim()) { setError('Please enter text to synthesize'); return; }
     setSubmitting(true);
     setError('');
@@ -263,10 +269,16 @@ export default function Synthesis() {
     try {
       const payload = {
         text,
-        voice_ref_id: selectedRef ? parseInt(selectedRef) : null,
-        emotion_control: emotionControl,
-        emotions: emotionControl === 'use-emotion-vector' ? emotions : null,
+        voice_ref_id: parseInt(selectedRef),
       };
+      
+      // Only send emotion params if using emotion vector method
+      if (emotionControlMethod === 'emotion_vector') {
+        payload.emo_vector = emotionVector;
+        payload.emo_alpha = 1.0; // emo_alpha is not used with manual vector control
+        payload.use_random = useRandom;
+      }
+      
       const res = await apiClient.post('/synthesis/', payload);
       setResult(res.data);
     } catch (err) {
@@ -277,7 +289,7 @@ export default function Synthesis() {
   };
 
   const handleEmotionChange = (emotion, value) => {
-    setEmotions(prev => ({ ...prev, [emotion]: parseFloat(value) }));
+    // Deprecated - kept for compatibility
   };
 
   return (
@@ -413,43 +425,203 @@ export default function Synthesis() {
       <div className="settings-section">
         <div className="settings-title">Settings</div>
         <div className="settings-panel">
-          <div className="settings-subtitle">Emotion control method</div>
-          <div className="emotion-controls">
-            {['Same as the voice reference', 'Use emotion reference audio', 'Use emotion vector', 'Use text description to control emotion'].map(method => {
-              const id = method.toLowerCase().replace(/\s/g, '-');
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`emotion-btn ${emotionControl === id ? 'active' : ''}`}
-                  onClick={() => setEmotionControl(id)}
-                >
-                  {method}
-                </button>
-              );
-            })}
+          <div className="settings-subtitle">Emotion Control Method</div>
+          <div className="control-method-buttons">
+            <button
+              type="button"
+              className={`method-btn ${emotionControlMethod === 'same_as_ref' ? 'active' : ''}`}
+              onClick={() => setEmotionControlMethod('same_as_ref')}
+            >
+              Same as the voice reference
+            </button>
+            <button
+              type="button"
+              className={`method-btn ${emotionControlMethod === 'emotion_audio' ? 'active' : ''}`}
+              onClick={() => setEmotionControlMethod('emotion_audio')}
+            >
+              Use emotion reference audio
+            </button>
+            <button
+              type="button"
+              className={`method-btn ${emotionControlMethod === 'emotion_vector' ? 'active' : ''}`}
+              onClick={() => setEmotionControlMethod('emotion_vector')}
+            >
+              Use emotion vector
+            </button>
+            <button
+              type="button"
+              className={`method-btn ${emotionControlMethod === 'emotion_text' ? 'active' : ''}`}
+              onClick={() => setEmotionControlMethod('emotion_text')}
+            >
+              Use text description to control emotion
+            </button>
           </div>
 
-          {emotionControl === 'use-emotion-vector' && (
-            <div className="emotion-sliders">
-              <h4>Random emotion sampling</h4>
-              <div className="sliders-grid">
-                {Object.keys(emotions).map(emotion => (
-                  <div key={emotion} className="slider-group">
-                    <label>{emotion.charAt(0).toUpperCase() + emotion.slice(1)}</label>
+          {emotionControlMethod === 'emotion_vector' && (
+            <>
+              <div className="settings-subtitle" style={{ marginTop: '24px' }}>Random emotion sampling</div>
+              <div className="checkbox-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={useRandom}
+                    onChange={e => setUseRandom(e.target.checked)}
+                  />
+                  Enable random emotion variation
+                </label>
+              </div>
+              {useRandom && (
+                <div className="slider-group" style={{ marginTop: '12px' }}>
+                  <label>Random Intensity</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={randomIntensity}
+                    onChange={e => setRandomIntensity(parseFloat(e.target.value))}
+                    className="emotion-slider"
+                  />
+                  <span>{randomIntensity.toFixed(1)}</span>
+                </div>
+              )}
+
+              <div className="settings-subtitle" style={{ marginTop: '24px' }}>Emotion Vector</div>
+              <div className="emotion-sliders-grid">
+                <div className="emotion-slider-row">
+                  <div className="emotion-slider-column">
+                    <label>Happy</label>
                     <input
                       type="range"
                       min="0"
-                      max="1.4"
-                      step="0.01"
-                      value={emotions[emotion]}
-                      onChange={e => handleEmotionChange(emotion, e.target.value)}
+                      max="1"
+                      step="0.1"
+                      value={emotionVector[0]}
+                      onChange={e => setEmotionVector([parseFloat(e.target.value), ...emotionVector.slice(1)])}
+                      className="emotion-slider"
                     />
-                    <span>{emotions[emotion]}</span>
+                    <span className="slider-value">{emotionVector[0].toFixed(1)}</span>
                   </div>
-                ))}
+                  <div className="emotion-slider-column">
+                    <label>Angry</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={emotionVector[1]}
+                      onChange={e => setEmotionVector([emotionVector[0], parseFloat(e.target.value), ...emotionVector.slice(2)])}
+                      className="emotion-slider"
+                    />
+                    <span className="slider-value">{emotionVector[1].toFixed(1)}</span>
+                  </div>
+                </div>
+                <div className="emotion-slider-row">
+                  <div className="emotion-slider-column">
+                    <label>Sad</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={emotionVector[2]}
+                      onChange={e => setEmotionVector([emotionVector[0], emotionVector[1], parseFloat(e.target.value), ...emotionVector.slice(3)])}
+                      className="emotion-slider"
+                    />
+                    <span className="slider-value">{emotionVector[2].toFixed(1)}</span>
+                  </div>
+                  <div className="emotion-slider-column">
+                    <label>Surprised</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={emotionVector[6]}
+                      onChange={e => {
+                        const newVector = [...emotionVector];
+                        newVector[6] = parseFloat(e.target.value);
+                        setEmotionVector(newVector);
+                      }}
+                      className="emotion-slider"
+                    />
+                    <span className="slider-value">{emotionVector[6].toFixed(1)}</span>
+                  </div>
+                </div>
+                <div className="emotion-slider-row">
+                  <div className="emotion-slider-column">
+                    <label>Afraid</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={emotionVector[3]}
+                      onChange={e => {
+                        const newVector = [...emotionVector];
+                        newVector[3] = parseFloat(e.target.value);
+                        setEmotionVector(newVector);
+                      }}
+                      className="emotion-slider"
+                    />
+                    <span className="slider-value">{emotionVector[3].toFixed(1)}</span>
+                  </div>
+                  <div className="emotion-slider-column">
+                    <label>Natural</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={emotionVector[7]}
+                      onChange={e => {
+                        const newVector = [...emotionVector];
+                        newVector[7] = parseFloat(e.target.value);
+                        setEmotionVector(newVector);
+                      }}
+                      className="emotion-slider"
+                    />
+                    <span className="slider-value">{emotionVector[7].toFixed(1)}</span>
+                  </div>
+                </div>
+                <div className="emotion-slider-row">
+                  <div className="emotion-slider-column">
+                    <label>Disgusted</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={emotionVector[4]}
+                      onChange={e => {
+                        const newVector = [...emotionVector];
+                        newVector[4] = parseFloat(e.target.value);
+                        setEmotionVector(newVector);
+                      }}
+                      className="emotion-slider"
+                    />
+                    <span className="slider-value">{emotionVector[4].toFixed(1)}</span>
+                  </div>
+                  <div className="emotion-slider-column">
+                    <label>Low</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={emotionVector[5]}
+                      onChange={e => {
+                        const newVector = [...emotionVector];
+                        newVector[5] = parseFloat(e.target.value);
+                        setEmotionVector(newVector);
+                      }}
+                      className="emotion-slider"
+                    />
+                    <span className="slider-value">{emotionVector[5].toFixed(1)}</span>
+                  </div>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>

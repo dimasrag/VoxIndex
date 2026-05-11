@@ -1,6 +1,7 @@
 import os
 import uuid
 import logging
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -22,6 +23,12 @@ OUTPUTS_PATH = os.path.join(STORAGE_PATH, "outputs")
 class SynthesisRequest(BaseModel):
     voice_ref_id: int
     text: str
+    emo_vector: Optional[list] = None  # 8-float emotion vector [happy, angry, sad, afraid, disgusted, melancholic, surprised, calm]
+    emo_alpha: float = 1.0  # emotion strength: 0.0 to 1.0
+    use_emo_text: bool = False  # enable emotion from emo_text
+    emo_text: Optional[str] = None  # text describing desired emotion
+    use_random: bool = False  # randomize generation aspects
+    interval_silence: int = 200  # silence between segments (ms)
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_synthesis(
@@ -63,8 +70,19 @@ def create_synthesis(
 
     error_message = None
     try:
-        logger.info(f"Calling synthesize with voice_ref={voice_ref.file_path}")
-        synthesize(cleaned_text, voice_ref.file_path, output_path)
+        logger.info(f"Calling synthesize with voice_ref={voice_ref.file_path}, emo_alpha={req.emo_alpha}, use_random={req.use_random}")
+        synthesize(
+            cleaned_text,
+            voice_ref.file_path,
+            output_path,
+            emo_vector=req.emo_vector,
+            emo_alpha=req.emo_alpha,
+            use_emo_text=req.use_emo_text,
+            emo_text=req.emo_text,
+            use_random=req.use_random,
+            interval_silence=req.interval_silence,
+        )
+
         logger.info(f"Synthesis succeeded, status=completed")
         job.status = "completed"
     except TTSServiceError as exc:
