@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import './Dashboard.css';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/client';
 

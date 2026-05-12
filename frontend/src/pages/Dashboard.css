@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=ABeeZee:ital@0;1&display=swap');
+
+.page-container  {
+  font-family: 'ABeeZee', sans-serif;
+}
+
+.page-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 60px 24px;
+}
+
+.page-container h1 {
+  font-size: 28px;
+  font-weight: 500;
+  color: #ffffff;
+  margin-bottom: 32px;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.dashboard-card {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 28px 24px;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+
+.dashboard-card:hover {
+  border-color: #f97316;
+}
+
+.dashboard-card h3 {
+  color: #f97316;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 6px;
+}
+
+.dashboard-card p {
+  color: #6b7280;
+  font-size: 13px;
+  margin: 0;
+}
+
+.recent-section {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 28px 24px;
+}
+
+.recent-section h2 {
+  color: #f97316;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 20px;
+}
+
+.jobs-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.jobs-table thead tr {
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.jobs-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  padding: 0 0 12px;
+}
+
+.jobs-table th:nth-child(2),
+.jobs-table th:nth-child(3) {
+  text-align: center;
+}
+
+.jobs-table td {
+  padding: 16px 0;
+  font-size: 13px;
+  color: #d1d5db;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.jobs-table tr:last-child td {
+  border-bottom: none;
+}
+
+.jobs-table td:nth-child(2),
+.jobs-table td:nth-child(3) {
+  text-align: center;
+}
+
+.text-preview {
+  max-width: 500px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-completed {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.status-failed {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.status-pending {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.empty-msg {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.empty-msg a {
+  color: #f97316;
+  text-decoration: none;
+}
