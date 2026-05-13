@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 from dotenv import load_dotenv
+from sqlalchemy import inspect, text
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
@@ -41,9 +42,18 @@ os.makedirs(VOICE_REFS_PATH, exist_ok=True)
 app.mount("/static/outputs", StaticFiles(directory=OUTPUTS_PATH), name="outputs")
 app.mount("/static/voice_refs", StaticFiles(directory=VOICE_REFS_PATH), name="voice_refs")
 
+
+def _ensure_user_admin_column():
+    with engine.begin() as connection:
+        inspector = inspect(connection)
+        user_columns = {column["name"] for column in inspector.get_columns("users")}
+        if "is_admin" not in user_columns:
+            connection.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE"))
+
 @app.on_event("startup")
 async def startup_event():
     Base.metadata.create_all(bind=engine)
+    _ensure_user_admin_column()
     os.makedirs(OUTPUTS_PATH, exist_ok=True)
     os.makedirs(VOICE_REFS_PATH, exist_ok=True)
 
