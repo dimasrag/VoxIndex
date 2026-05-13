@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -13,6 +14,41 @@ export function AuthProvider({ children }) {
     } else {
       localStorage.removeItem('token');
     }
+  }, [token]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!token) {
+      setUser(null);
+      setAuthReady(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setAuthReady(false);
+    apiClient.get('/auth/me')
+      .then((res) => {
+        if (!cancelled) {
+          setUser(res.data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setToken(null);
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAuthReady(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   const login = async (username, password) => {
@@ -23,7 +59,8 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
     setToken(res.data.access_token);
-    setUser({ username });
+    setUser({ username, is_admin: res.data.is_admin });
+    setAuthReady(true);
     return res.data;
   };
 
@@ -35,10 +72,11 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setToken(null);
     setUser(null);
+    setAuthReady(true);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, register }}>
+    <AuthContext.Provider value={{ user, token, authReady, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
