@@ -114,7 +114,7 @@ export default function AdminDashboard() {
         apiClient.get('/admin/users'),
         apiClient.get('/admin/activity'),
       ]);
-      setUsers(usersRes.data);
+      setUsers(Array.isArray(usersRes.data) ? usersRes.data : usersRes.data.items || []);
       setActivity(activityRes.data);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load admin data');
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
     setDeleting(userId);
     try {
       await apiClient.delete(`/admin/users/${userId}`);
-      setUsers(users.filter(u => u.id !== userId));
+      setUsers((currentUsers) => currentUsers.filter((u) => u.id !== userId));
       setError('');
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to delete user');
