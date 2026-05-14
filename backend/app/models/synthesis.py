@@ -13,3 +13,5 @@ class SynthesisJob(Base):
     output_path = Column(String, nullable=True)
     status = Column(String, default="pending")  # pending/completed/failed
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
