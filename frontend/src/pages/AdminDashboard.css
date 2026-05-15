@@ -254,33 +254,57 @@
   min-height: 480px;
 }
 
-.admin-period-switch {
+.admin-period-dropdown {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
 }
 
-.admin-period-btn {
+.admin-period-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   border: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.62);
-  padding: 0.2rem 0.45rem;
-  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0;
+  font-size: 0.9rem;
   cursor: pointer;
 }
 
-.admin-period-btn.active {
-  color: #fafafa;
+.admin-period-toggle-icons {
+  font-size: 0.72rem;
+  letter-spacing: -0.1em;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .admin-chart-wrap {
   margin-top: 0.75rem;
-  height: 190px;
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
+.admin-chart-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.4rem 0 2.05rem;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.68rem;
+  text-align: right;
+}
+
+.admin-chart-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
 }
 
 .admin-growth-chart {
   width: 100%;
-  height: 100%;
+  height: 220px;
   display: block;
   overflow: visible;
 }
@@ -307,39 +331,78 @@
 }
 
 .admin-chart-labels {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 0.25rem;
-  margin-top: 0.35rem;
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 0.64rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.68rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.admin-chart-labels span {
+  min-width: 0;
+  text-align: center;
 }
 
 .admin-chart-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.4rem;
-  margin-top: 1.2rem;
+  margin-top: 1rem;
 }
 
 .admin-summary-label {
-  color: rgba(255, 255, 255, 0.52);
-  font-size: 0.74rem;
-  margin-bottom: 0.4rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+  margin-bottom: 0.9rem;
+  font-weight: 700;
 }
 
 .admin-chart-summary-grid strong {
   display: block;
-  color: #ff8f1f;
-  font-size: 1rem;
-  font-weight: 700;
+  color: #ff7a00;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .admin-chart-summary-grid span {
   display: block;
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 0.72rem;
-  margin-top: 0.1rem;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.admin-period-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  display: grid;
+  gap: 0.15rem;
+  min-width: 6rem;
+  padding: 0.25rem 0;
+  background: rgba(10, 10, 10, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.55rem;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+  z-index: 2;
+}
+
+.admin-period-menu-item {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.28rem 0.8rem;
+  text-align: left;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.admin-period-menu-item:hover,
+.admin-period-menu-item:focus {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .admin-table-section {

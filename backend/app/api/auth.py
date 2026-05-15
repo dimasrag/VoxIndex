@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from app.models import get_db
 from app.models.user import User
+from app.api.admin import clear_cached_stats
 from app.services.auth import get_password_hash, verify_password, create_access_token, get_current_user
 
 router = APIRouter()
@@ -39,6 +40,8 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+    clear_cached_stats("users_growth_")
+    clear_cached_stats("overview")
     return {"id": user.id, "username": user.username, "email": user.email}
 
 @router.post("/login", response_model=TokenResponse)
