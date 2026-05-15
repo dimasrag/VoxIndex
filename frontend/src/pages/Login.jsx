@@ -13,6 +13,14 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!username.trim()) {
+      setError('Username is required');
+      return;
+    }
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
     try {
       const result = await login(username, password);
       navigate(result.is_admin ? '/admin' : '/dashboard');
@@ -29,11 +37,11 @@ return (
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Username</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} required />
+            <input type="text" value={username} onChange={e => setUsername(e.target.value)} />
           </div>
           <div className="form-group">
             <label>Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
             <div className="forgot-password"><a href="#">Forgot Password?</a></div>
           </div>
           <button type="submit" className="btn-login">Login</button>
