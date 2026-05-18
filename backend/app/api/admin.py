@@ -31,6 +31,15 @@ def get_cached_stats(key: str):
 def set_cached_stats(key: str, value):
     _stats_cache[key] = (value, time.time())
 
+def clear_cached_stats(prefix: Optional[str] = None):
+    if prefix is None:
+        _stats_cache.clear()
+        return
+
+    for key in list(_stats_cache.keys()):
+        if key.startswith(prefix):
+            _stats_cache.pop(key, None)
+
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if not current_user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
@@ -176,6 +185,8 @@ def delete_user(user_id: int, admin: User = Depends(require_admin), db: Session 
 
     db.delete(user)
     db.commit()
+    clear_cached_stats("users_growth_")
+    clear_cached_stats("overview")
 
     return None
 
@@ -272,24 +283,25 @@ def get_users_growth(
                 "user_count": total_users,
                 "new_users": new_users,
             })
-    elif period == "weekly":
-        # Last 12 weeks
+    elif period == "yearly":
+        # Last 6 years
         points = []
-        for offset in range(11, -1, -1):
-            week_start = now - timedelta(weeks=offset+1)
-            week_end = now - timedelta(weeks=offset)
+        for offset in range(5, -1, -1):
+            year = now.year - offset
+            year_start = datetime(year, 1, 1)
+            year_end = datetime(year + 1, 1, 1)
             
             total_users = db.query(func.count(func.distinct(User.id))).filter(
-                User.created_at <= week_end
+                User.created_at < year_end
             ).scalar() or 0
             
             new_users = db.query(func.count(User.id)).filter(
-                User.created_at >= week_start,
-                User.created_at < week_end
+                User.created_at >= year_start,
+                User.created_at < year_end
             ).scalar() or 0
             
             points.append({
-                "date": week_start.date().isoformat(),
+                "date": year_start.date().isoformat(),
                 "user_count": total_users,
                 "new_users": new_users,
             })

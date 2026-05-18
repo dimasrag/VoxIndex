@@ -17,6 +17,28 @@ function formatDateOnly(value) {
   return new Date(value).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function formatPercentChange(value) {
+  return `${value > 0 ? '+' : ''}${value}%`;
+}
+
+function formatCompactCount(value) {
+  return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
+function formatGrowthLabel(value, period) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  if (period === 'daily') return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  if (period === 'yearly') return String(date.getFullYear());
+  return date.toLocaleDateString(undefined, { month: 'short' });
+}
+
+function formatActivityLabel(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+}
+
 function getInitials(username = '') {
   return username
     .split(/[^a-zA-Z0-9]/)
@@ -100,8 +122,13 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [chartPeriod, setChartPeriod] = useState('yearly');
+  const [periodMenuOpen, setPeriodMenuOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [activity, setActivity] = useState([]);
+  const [statsOverview, setStatsOverview] = useState(null);
+  const [growthDaily, setGrowthDaily] = useState([]);
+  const [growthMonthly, setGrowthMonthly] = useState([]);
+  const [growthYearly, setGrowthYearly] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(null);
@@ -110,12 +137,20 @@ export default function AdminDashboard() {
     setLoading(true);
     setError('');
     try {
-      const [usersRes, activityRes] = await Promise.all([
+      const [usersRes, activityRes, statsRes, growthDailyRes, growthMonthlyRes, growthYearlyRes] = await Promise.all([
         apiClient.get('/admin/users'),
         apiClient.get('/admin/activity'),
+        apiClient.get('/admin/stats/overview'),
+        apiClient.get('/admin/stats/users/growth?period=daily'),
+        apiClient.get('/admin/stats/users/growth?period=monthly'),
+        apiClient.get('/admin/stats/users/growth?period=yearly'),
       ]);
       setUsers(Array.isArray(usersRes.data) ? usersRes.data : usersRes.data.items || []);
-      setActivity(activityRes.data);
+      setActivity(Array.isArray(activityRes.data) ? activityRes.data : activityRes.data.items || []);
+      setStatsOverview(statsRes.data || null);
+      setGrowthDaily(Array.isArray(growthDailyRes.data) ? growthDailyRes.data : growthDailyRes.data.items || []);
+      setGrowthMonthly(Array.isArray(growthMonthlyRes.data) ? growthMonthlyRes.data : growthMonthlyRes.data.items || []);
+      setGrowthYearly(Array.isArray(growthYearlyRes.data) ? growthYearlyRes.data : growthYearlyRes.data.items || []);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load admin data');
     } finally {
@@ -143,17 +178,6 @@ export default function AdminDashboard() {
     loadAdminData();
   }, []);
 
-  const overview = useMemo(() => {
-    const totalUsers = users.length;
-    const adminUsers = users.filter((item) => item.is_admin).length;
-    const totalJobs = activity.length;
-    const completedJobs = activity.filter((item) => item.status === 'completed').length;
-    const failedJobs = activity.filter((item) => item.status === 'failed').length;
-    const activeUsersPercent = totalUsers === 0 ? 0 : Math.max(15, Math.round((completedJobs / Math.max(totalJobs, 1)) * 100));
-    const activeUsersTrend = totalUsers === 0 ? '+0' : '+15';
-    return { totalUsers, adminUsers, totalJobs, completedJobs, failedJobs, activeUsersPercent, activeUsersTrend };
-  }, [users, activity]);
-
   const latestActivity = activity.slice(0, 5);
   const rankedUsers = useMemo(() => {
     return [...users].sort((left, right) => {
@@ -163,39 +187,72 @@ export default function AdminDashboard() {
   }, [users]);
 
   const chartSeries = useMemo(() => {
-    if (chartPeriod === 'daily') return buildDailySeries(activity);
-    if (chartPeriod === 'monthly') return buildMonthlySeries(activity);
-    return buildYearlySeries(activity);
-  }, [activity, chartPeriod]);
+    const source = chartPeriod === 'daily' ? growthDaily : chartPeriod === 'yearly' ? growthYearly : growthMonthly;
+    return source.map((point) => ({
+      label: formatGrowthLabel(point.date, chartPeriod),
+      value: Number(point.new_users ?? point.user_count ?? 0),
+    }));
+  }, [chartPeriod, growthDaily, growthMonthly, growthYearly]);
+
+  const chartMax = useMemo(() => {
+    return Math.max(...chartSeries.map((point) => point.value), 1);
+  }, [chartSeries]);
+
+  const chartTicks = useMemo(() => {
+    const tickRatios = [1, 0.75, 0.5, 0.25, 0];
+    return tickRatios.map((ratio) => ({
+      ratio,
+      label: formatCompactCount(Math.round(chartMax * ratio)),
+    }));
+  }, [chartMax]);
 
   const chartPath = buildPath(chartSeries);
   const topMonth = useMemo(() => {
+    if (!activity.length) return { label: 'N/A', value: 0 };
+    let best = { label: 'N/A', subtitle: '', value: 0 };
     const monthBuckets = new Map();
     activity.forEach((item) => {
       const createdAt = new Date(item.created_at);
-      const key = createdAt.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      const key = `${createdAt.getFullYear()}-${createdAt.getMonth()}`;
       monthBuckets.set(key, (monthBuckets.get(key) || 0) + 1);
     });
-    let best = { label: 'N/A', value: 0 };
-    for (const [label, value] of monthBuckets.entries()) {
-      if (value > best.value) best = { label, value };
+
+    for (const [key, value] of monthBuckets.entries()) {
+      if (value > best.value) {
+        const [year, month] = key.split('-').map(Number);
+        const date = new Date(year, month, 1);
+        best = {
+          label: date.toLocaleDateString(undefined, { month: 'long' }),
+          subtitle: String(date.getFullYear()),
+          value,
+        };
+      }
     }
     return best;
   }, [activity]);
 
   const topYear = useMemo(() => {
+    if (!activity.length) return { label: 'N/A', value: 0 };
+    let best = { label: 'N/A', value: 0 };
     const yearBuckets = new Map();
     activity.forEach((item) => {
       const createdAt = new Date(item.created_at);
       const key = createdAt.getFullYear();
       yearBuckets.set(key, (yearBuckets.get(key) || 0) + 1);
     });
-    let best = { label: 'N/A', value: 0 };
-    for (const [label, value] of yearBuckets.entries()) {
-      if (value > best.value) best = { label, value };
+
+    for (const [key, value] of yearBuckets.entries()) {
+      if (value > best.value) {
+        best = { label: String(key), value };
+      }
     }
     return best;
   }, [activity]);
+
+  const activeUsers = statsOverview?.active_users ?? 0;
+  const activeUsersChange = statsOverview?.active_users_change_percent ?? 0;
+  const activeUsersArrow = activeUsersChange >= 0 ? '↗' : '↘';
+  const selectedPeriodLabel = chartPeriod[0].toUpperCase() + chartPeriod.slice(1);
 
   return (
     <div className="page-container admin-page">
@@ -227,10 +284,10 @@ export default function AdminDashboard() {
                   <div className="admin-hero-copy">
                     <h2>Active Users</h2>
                     <div className="admin-hero-value">
-                      <span>{overview.activeUsersPercent}%</span>
-                      <span className="admin-trend-arrow">↗</span>
+                      <span>{activeUsers}</span>
+                      <span className={`admin-trend-arrow ${activeUsersChange < 0 ? 'is-down' : ''}`}>{activeUsersArrow}</span>
                     </div>
-                    <p>Increase compared to last week</p>
+                    <p>{formatPercentChange(activeUsersChange)} vs previous period</p>
                   </div>
                 </div>
 
@@ -278,57 +335,82 @@ export default function AdminDashboard() {
                   <section className="admin-panel admin-chart-panel">
                     <div className="admin-panel-header admin-panel-header-spread">
                       <h2>Growth</h2>
-                      <div className="admin-period-switch">
-                        {['yearly', 'monthly', 'daily'].map((period) => (
-                          <button
-                            key={period}
-                            type="button"
-                            className={`admin-period-btn ${chartPeriod === period ? 'active' : ''}`}
-                            onClick={() => setChartPeriod(period)}
-                          >
-                            {period[0].toUpperCase() + period.slice(1)}
-                          </button>
-                        ))}
+                      <div className="admin-period-dropdown">
+                        <button
+                          type="button"
+                          className="admin-period-toggle"
+                          onClick={() => setPeriodMenuOpen((current) => !current)}
+                        >
+                          <span>{selectedPeriodLabel}</span>
+                          <span className="admin-period-toggle-icons" aria-hidden="true">⌄⌃</span>
+                        </button>
+                        {periodMenuOpen ? (
+                          <div className="admin-period-menu" role="menu" aria-label="Growth period">
+                            {['daily', 'monthly', 'yearly']
+                              .filter((period) => period !== chartPeriod)
+                              .map((period) => (
+                                <button
+                                  key={period}
+                                  type="button"
+                                  className="admin-period-menu-item"
+                                  onClick={() => {
+                                    setChartPeriod(period);
+                                    setPeriodMenuOpen(false);
+                                  }}
+                                >
+                                  {period[0].toUpperCase() + period.slice(1)}
+                                </button>
+                              ))}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
 
                     <div className="admin-chart-wrap">
-                      <svg viewBox="0 0 100 100" className="admin-growth-chart" preserveAspectRatio="none" aria-hidden="true">
-                        <defs>
-                          <linearGradient id="growthFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#3fae3f" stopOpacity="0.75" />
-                            <stop offset="100%" stopColor="#3fae3f" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        {[0, 20, 40, 60, 80, 100].map((gridY) => (
-                          <line key={gridY} x1="0" x2="100" y1={gridY} y2={gridY} className="admin-chart-grid" />
+                      <div className="admin-chart-y-axis" aria-hidden="true">
+                        {chartTicks.map((tick) => (
+                          <span key={tick.ratio}>{tick.label}</span>
                         ))}
-                        {chartSeries.map((point, index) => {
-                          const stepX = chartSeries.length > 1 ? 100 / (chartSeries.length - 1) : 0;
-                          const x = index * stepX;
-                          return <line key={point.label} x1={x} x2={x} y1="0" y2="100" className="admin-chart-grid admin-chart-grid-vertical" />;
-                        })}
-                        <path d={`${chartPath} L 100 100 L 0 100 Z`} className="admin-growth-area" />
-                        <path d={chartPath} className="admin-growth-line" />
-                      </svg>
-                    </div>
+                      </div>
 
-                    <div className="admin-chart-labels">
-                      {chartSeries.map((point) => (
-                        <span key={point.label}>{point.label}</span>
-                      ))}
+                      <div className="admin-chart-stage">
+                        <svg viewBox="0 0 100 100" className="admin-growth-chart" preserveAspectRatio="none" aria-hidden="true">
+                          <defs>
+                            <linearGradient id="growthFill" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#3fae3f" stopOpacity="0.75" />
+                              <stop offset="100%" stopColor="#3fae3f" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          {[0, 20, 40, 60, 80, 100].map((gridY) => (
+                            <line key={gridY} x1="0" x2="100" y1={gridY} y2={gridY} className="admin-chart-grid" />
+                          ))}
+                          {chartSeries.map((point, index) => {
+                            const stepX = chartSeries.length > 1 ? 100 / (chartSeries.length - 1) : 0;
+                            const x = index * stepX;
+                            return <line key={`${point.label}-${index}`} x1={x} x2={x} y1="0" y2="100" className="admin-chart-grid admin-chart-grid-vertical" />;
+                          })}
+                          <path d={`${chartPath} L 100 100 L 0 100 Z`} className="admin-growth-area" />
+                          <path d={chartPath} className="admin-growth-line" />
+                        </svg>
+
+                        <div className="admin-chart-labels">
+                          {chartSeries.map((point, index) => (
+                            <span key={`${point.label}-${index}`}>{point.label}</span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="admin-chart-summary-grid">
                       <div>
                         <p className="admin-summary-label">Top month</p>
                         <strong>{topMonth.label}</strong>
-                        <span>{topMonth.value} activities</span>
+                        <span>{topMonth.subtitle}</span>
                       </div>
                       <div>
                         <p className="admin-summary-label">Top year</p>
                         <strong>{topYear.label}</strong>
-                        <span>{topYear.value} activities</span>
+                        <span>{formatCompactCount(topYear.value)} activities so far</span>
                       </div>
                     </div>
                   </section>
