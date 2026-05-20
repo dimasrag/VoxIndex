@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from app.models import get_db
+from typing import Optional
 from app.models.user import User
 from app.api.admin import clear_cached_stats
 from app.services.auth import get_password_hash, verify_password, create_access_token, get_current_user
@@ -25,6 +26,11 @@ class UserResponse(BaseModel):
     username: str
     email: EmailStr
     is_admin: bool
+
+class UpdateProfileRequest(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
@@ -55,6 +61,36 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @router.get("/me", response_model=UserResponse)
 def read_current_user(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "is_admin": current_user.is_admin,
+    }
+
+@router.patch("/me", response_model=UserResponse)
+def update_current_user(
+    req: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if req.username and req.username != current_user.username:
+        if db.query(User).filter(User.username == req.username).first():
+            raise HTTPException(status_code=400, detail="Username already taken")
+        current_user.username = req.username
+
+    if req.email and req.email != current_user.email:
+        if db.query(User).filter(User.email == req.email).first():
+            raise HTTPException(status_code=400, detail="Email already taken")
+        current_user.email = req.email
+
+    if req.password:
+        if len(req.password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        current_user.hashed_password = get_password_hash(req.password)
+
+    db.commit()
+    db.refresh(current_user)
     return {
         "id": current_user.id,
         "username": current_user.username,

@@ -75,8 +75,16 @@ export function AuthProvider({ children }) {
     setAuthReady(true);
   };
 
+  const refreshUser = async () => {
+  try {
+    const res = await apiClient.get('/auth/me');
+    setUser(res.data);
+  } catch (err) {
+  }
+};
+
   return (
-    <AuthContext.Provider value={{ user, token, authReady, login, logout, register }}>
+    <AuthContext.Provider value={{ user, token, authReady, login, logout, register, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

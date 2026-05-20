@@ -1,0 +1,287 @@
+.profile-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 60px);
+  background: #090909;
+}
+
+.profile-card {
+  position: relative;
+  background: #1a1a1a;
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 480px;
+  border: 1px solid transparent;
+  background-image: linear-gradient(#1a1a1a, #1a1a1a), linear-gradient(to bottom, #1a1a1a, #E85002);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 0 40px rgba(232, 80, 2, 0.15);
+}
+
+.profile-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.profile-close:hover {
+  color: #ffffff;
+}
+
+.profile-avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.profile-avatar-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 12px;
+  margin-top: -60px;
+}
+
+.profile-avatar-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #1a1a1a;
+}
+
+.profile-avatar-edit {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  background: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.profile-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 4px;
+}
+
+.profile-email-sub {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.profile-divider {
+  height: 1px;
+  background: #2a2a2a;
+  margin-bottom: 24px;
+}
+
+.profile-field {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.profile-field label {
+  width: 120px;
+  font-size: 14px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.profile-field input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 14px;
+  outline: none;
+}
+
+.profile-forgot {
+  font-size: 12px;
+  color: #f97316;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.profile-change-pw {
+  background: none;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #f97316;
+  font-size: 13px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.profile-change-pw:hover {
+  border-color: #f97316;
+}
+
+.profile-pw-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.profile-pw-fields input {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 14px;
+  padding: 8px 12px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.profile-pw-fields input:focus {
+  border-color: #f97316;
+}
+
+.profile-cancel-pw {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+
+.profile-cancel-pw:hover {
+  color: #ffffff;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.confirm-dialog {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 28px 32px;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+}
+
+.confirm-dialog h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 8px;
+}
+
+.confirm-dialog p {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: 0 0 24px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.confirm-cancel {
+  padding: 8px 24px;
+  background: none;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  color: #d1d5db;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.confirm-cancel:hover {
+  border-color: #6b7280;
+}
+
+.confirm-ok {
+  padding: 8px 24px;
+  background: radial-gradient(ellipse, #FF752F, #E85002);
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.confirm-ok:hover {
+  opacity: 0.9;
+}
+
+.btn-save {
+  padding: 10px 24px;
+  background: radial-gradient(ellipse, #FF752F, #E85002);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-save:hover {
+  opacity: 0.9;
+}
+
+.success-msg {
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.error-msg {
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #f87171;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
