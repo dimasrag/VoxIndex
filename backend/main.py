@@ -36,6 +36,10 @@ STORAGE_PATH = os.getenv("STORAGE_PATH", "../storage")
 OUTPUTS_PATH = os.path.join(STORAGE_PATH, "outputs")
 VOICE_REFS_PATH = os.path.join(STORAGE_PATH, "voice_refs")
 
+AVATARS_PATH = os.path.join(STORAGE_PATH, "avatars")
+os.makedirs(AVATARS_PATH, exist_ok=True)
+app.mount("/static/avatars", StaticFiles(directory=AVATARS_PATH), name="avatars")
+
 os.makedirs(OUTPUTS_PATH, exist_ok=True)
 os.makedirs(VOICE_REFS_PATH, exist_ok=True)
 
@@ -50,10 +54,19 @@ def _ensure_user_admin_column():
         if "is_admin" not in user_columns:
             connection.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE"))
 
+def _ensure_avatar_column():
+    with engine.begin() as connection:
+        inspector = inspect(connection)
+        user_columns = {column["name"] for column in inspector.get_columns("users")}
+        if "avatar_filename" not in user_columns:
+            connection.execute(text("ALTER TABLE users ADD COLUMN avatar_filename VARCHAR"))
+
+
 @app.on_event("startup")
 async def startup_event():
     Base.metadata.create_all(bind=engine)
     _ensure_user_admin_column()
+    _ensure_avatar_column()
     os.makedirs(OUTPUTS_PATH, exist_ok=True)
     os.makedirs(VOICE_REFS_PATH, exist_ok=True)
 

@@ -16,6 +16,11 @@ export default function Profile() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const apiBase = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
 
 
   const handleSaveClick = (e) => {
@@ -34,7 +39,7 @@ export default function Profile() {
     setShowConfirmDialog(true);
   };
 
-  const handleConfirmedSubmit = async () => {
+ const handleConfirmedSubmit = async () => {
     setShowConfirmDialog(false);
     setError('');
     setSuccess('');
@@ -45,6 +50,20 @@ export default function Profile() {
         email: email || undefined,
         password: showPasswordFields && password ? password : undefined,
       });
+
+      if (removeAvatar && user?.avatar_filename) {
+      await apiClient.delete('/auth/me/avatar');
+      setRemoveAvatar(false);
+    }
+
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append('file', avatarFile);
+        await apiClient.post('/auth/me/avatar', formData);
+        setAvatarFile(null);
+        setAvatarPreview(null);
+      }
+
       setSuccess('Changes saved successfully!');
       setPassword('');
       setConfirmPassword('');
@@ -58,14 +77,26 @@ export default function Profile() {
         }, 1500);
         return;
       }
-    await refreshUser();
-
+      await refreshUser();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to save changes');
     } finally {
       setSubmitting(false);
     }
   };
+
+const handleAvatarSelect = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  setAvatarFile(file);
+  setAvatarPreview(URL.createObjectURL(file));
+};
+
+const handleAvatarRemove = () => {
+  setRemoveAvatar(true);
+  setAvatarPreview(null);
+  setAvatarFile(null);
+};
 
   return (
     <div className="profile-container">
@@ -75,14 +106,32 @@ export default function Profile() {
         <div className="profile-avatar-section">
           <div className="profile-avatar-wrap">
             <img
-              src={`https://api.dicebear.com/7.x/initials/svg?seed=${user?.username || 'user'}`}
-              alt="avatar"
-              className="profile-avatar-img"
-            />
-            <div className="profile-avatar-edit">✏</div>
-          </div>
+                src={
+                  avatarPreview ||
+                  (user?.avatar_filename
+                    ? `${apiBase}/static/avatars/${user.avatar_filename}`
+                    : `https://api.dicebear.com/7.x/initials/svg?seed=${user?.username || 'user'}`)
+                }
+                alt="avatar"
+                className="profile-avatar-img"
+              />
+              <label className="profile-avatar-edit" title="Upload photo">
+                  ✏
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleAvatarSelect}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
           <h2 className="profile-name">{user?.username || 'Your name'}</h2>
           <p className="profile-email-sub">{user?.email || 'yourname@gmail.com'}</p>
+          {(user?.avatar_filename || avatarPreview) && !removeAvatar && (
+            <button type="button" className="profile-remove-avatar" onClick={handleAvatarRemove}>
+              Remove photo
+            </button>
+          )}
         </div>
 
         <div className="profile-divider" />
