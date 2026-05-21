@@ -72,6 +72,20 @@
   cursor: pointer;
 }
 
+.profile-remove-avatar {
+  background: none;
+  border: none;
+  color: #f87171;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 4px;
+  padding: 0;
+}
+
+.profile-remove-avatar:hover {
+  text-decoration: underline;
+}
+
 .profile-name {
   font-size: 18px;
   font-weight: 600;
