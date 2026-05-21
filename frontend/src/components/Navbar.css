@@ -50,7 +50,21 @@
   transition: color 0.2s;
 }
 
+.navbar-link-btn {
+  color: #d1d5db;
+  font-size: 14px;
+  font-family: 'ABeeZee', sans-serif;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
 .navbar-links a:hover {
+  color: #ffffff;
+}
+
+.navbar-link-btn:hover {
   color: #ffffff;
 }
 

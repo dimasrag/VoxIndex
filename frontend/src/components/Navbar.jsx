@@ -1,14 +1,30 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
-import logo from '../assets/logo.png';
+import logo from '../assets/Logo.png';
 
 export default function Navbar() {
   const { token, logout, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const isHome = location.pathname === '/home';
+
+  const scrollToSection = (sectionId) => {
+    if (!isHome) {
+      navigate('/home');
+      requestAnimationFrame(() => {
+        const section = document.getElementById(sectionId);
+        section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      return;
+    }
+
+    const section = document.getElementById(sectionId);
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const handleLogout = () => {
     logout();
@@ -30,7 +46,7 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-brand">
         <img src={logo} alt="VoxIndex Logo" className="navbar-logo" height={25} />
-        <Link to="/">VoxIndex</Link>
+        <Link to="/home">VoxIndex</Link>
       </div>
 
       {token && !user?.is_admin && (
@@ -40,7 +56,15 @@ export default function Navbar() {
           <Link to="/history">History</Link>
         </div>
       )}
-      {!token && (
+      {!token && isHome && (
+        <div className="navbar-links">
+          <button type="button" className="navbar-link-btn" onClick={() => scrollToSection('start')}>Start</button>
+          <button type="button" className="navbar-link-btn" onClick={() => scrollToSection('sample')}>Sample</button>
+          <button type="button" className="navbar-link-btn" onClick={() => scrollToSection('about')}>About</button>
+        </div>
+      )}
+
+      {!token && !isHome && (
         <div className="navbar-links">
           <Link to="/login">Login</Link>
           <Link to="/register">Register</Link>
