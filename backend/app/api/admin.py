@@ -45,6 +45,12 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return current_user
 
+
+def get_error_code_for_job(job: SynthesisJob) -> Optional[str]:
+    if job.status == "failed":
+        return "TTS_FAILED"
+    return None
+
 @router.get("/users")
 def list_users(
     admin: User = Depends(require_admin),
@@ -143,6 +149,7 @@ def list_activity(
             "user_id": job.user_id,
             "voice_ref_id": job.voice_ref_id,
             "status": job.status,
+            "error_code": get_error_code_for_job(job),
             "created_at": job.created_at,
             "duration": job.duration_seconds,
         })

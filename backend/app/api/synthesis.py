@@ -20,14 +20,20 @@ router = APIRouter()
 STORAGE_PATH = os.getenv("STORAGE_PATH", "../storage")
 OUTPUTS_PATH = os.path.join(STORAGE_PATH, "outputs")
 
+def _normalize_text(text: str) -> str:
+    cleaned = text.replace("/", " slash ").replace("\\", " slash ")
+    return " ".join(cleaned.split())
+
 class SynthesisRequest(BaseModel):
     voice_ref_id: int
     text: str
+    emo_voice_ref_id: Optional[int] = None
     emo_vector: Optional[list] = None  # 8-float emotion vector [happy, angry, sad, afraid, disgusted, melancholic, surprised, calm]
     emo_alpha: float = 1.0  # emotion strength: 0.0 to 1.0
     use_emo_text: bool = False  # enable emotion from emo_text
     emo_text: Optional[str] = None  # text describing desired emotion
     use_random: bool = False  # randomize generation aspects
+    max_text_tokens_per_segment: int = 160  # larger chunks reduce pauses between segments
     interval_silence: int = 200  # silence between segments (ms)
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -39,7 +45,7 @@ def create_synthesis(
     logger.info(f"Synthesis request received: text='{req.text}' voice_ref_id={req.voice_ref_id}")
     logger.info(f"TTS_PROVIDER env={os.getenv('TTS_PROVIDER', 'NOT SET')}")
     
-    cleaned_text = req.text.strip()
+    cleaned_text = _normalize_text(req.text.strip())
     if not cleaned_text:
         raise HTTPException(status_code=422, detail="Text must not be empty")
     if len(cleaned_text) > 2000:
@@ -51,6 +57,15 @@ def create_synthesis(
     ).first()
     if not voice_ref:
         raise HTTPException(status_code=404, detail="Voice reference not found")
+
+    emo_voice_ref = None
+    if req.emo_voice_ref_id is not None:
+        emo_voice_ref = db.query(VoiceReference).filter(
+            VoiceReference.id == req.emo_voice_ref_id,
+            VoiceReference.user_id == current_user.id,
+        ).first()
+        if not emo_voice_ref:
+            raise HTTPException(status_code=404, detail="Emotion reference not found")
 
     output_filename = f"{current_user.id}_{uuid.uuid4().hex}_output.wav"
     output_path = os.path.join(OUTPUTS_PATH, output_filename)
@@ -75,11 +90,13 @@ def create_synthesis(
             cleaned_text,
             voice_ref.file_path,
             output_path,
+            emo_audio_prompt=emo_voice_ref.file_path if emo_voice_ref else None,
             emo_vector=req.emo_vector,
             emo_alpha=req.emo_alpha,
             use_emo_text=req.use_emo_text,
             emo_text=req.emo_text,
             use_random=req.use_random,
+            max_text_tokens_per_segment=req.max_text_tokens_per_segment,
             interval_silence=req.interval_silence,
         )
 

@@ -2,6 +2,8 @@ import os
 from subprocess import CalledProcessError
 
 os.environ['HF_HUB_CACHE'] = './checkpoints/hf_cache'
+os.environ.setdefault('HF_HUB_OFFLINE', '1')
+os.environ.setdefault('TRANSFORMERS_OFFLINE', '1')
 import json
 import re
 import time
@@ -112,7 +114,17 @@ class IndexTTS2:
                 print(f"{e!r}")
                 self.use_cuda_kernel = False
 
-        self.extract_features = SeamlessM4TFeatureExtractor.from_pretrained("facebook/w2v-bert-2.0")
+        try:
+            self.extract_features = SeamlessM4TFeatureExtractor.from_pretrained(
+                "facebook/w2v-bert-2.0",
+                cache_dir=os.path.join(self.model_dir, "hf_cache"),
+                local_files_only=True,
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                "Failed to load the local w2v-bert-2.0 feature extractor cache. "
+                "Make sure the checkpoints cache is present before running offline."
+            ) from exc
         self.semantic_model, self.semantic_mean, self.semantic_std = build_semantic_model(
             os.path.join(self.model_dir, self.cfg.w2v_stat))
         self.semantic_model = self.semantic_model.to(self.device)

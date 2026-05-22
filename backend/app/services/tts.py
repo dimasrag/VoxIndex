@@ -53,6 +53,7 @@ class _IndexTTS2Engine:
               use_emo_text: bool = False,
               emo_text: Optional[str] = None,
               use_random: bool = False,
+              max_text_tokens_per_segment: int = 160,
               interval_silence: int = 200) -> None:
         
         model = self._load()
@@ -75,6 +76,7 @@ class _IndexTTS2Engine:
             kwargs["emo_text"] = emo_text
         if use_random:
             kwargs["use_random"] = use_random
+        kwargs["max_text_tokens_per_segment"] = max_text_tokens_per_segment
         if interval_silence != 200:
             kwargs["interval_silence"] = interval_silence
 
@@ -99,6 +101,7 @@ def synthesize(text: str, voice_ref_path: str, output_path: str,
                use_emo_text: bool = False,
                emo_text: Optional[str] = None,
                use_random: bool = False,
+               max_text_tokens_per_segment: int = 160,
                interval_silence: int = 200) -> None:
     
     """Synthesize speech using configured provider.
@@ -125,6 +128,7 @@ def synthesize(text: str, voice_ref_path: str, output_path: str,
             use_emo_text=use_emo_text,
             emo_text=emo_text,
             use_random=use_random,
+            max_text_tokens_per_segment=max_text_tokens_per_segment,
             interval_silence=interval_silence,
         )
         return
