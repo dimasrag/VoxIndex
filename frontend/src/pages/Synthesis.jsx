@@ -134,6 +134,23 @@ const LoadingCard = ({ title, subtitle }) => (
   </div>
 );
 
+const RecordingIndicator = () => (
+  <div className="recording-indicator" aria-live="polite" aria-label="Recording voice reference">
+    <span className="recording-dot" />
+    <span className="recording-label">Recording voice reference</span>
+    <span className="recording-wave" aria-hidden="true">
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+    </span>
+  </div>
+);
+
 const getAudioDuration = async (url) => {
   try {
     const response = await fetch(url);
@@ -152,6 +169,8 @@ export default function Synthesis() {
   const outAudioRef = useRef(null);
   const voiceUploadRef = useRef(null);
   const emotionUploadRef = useRef(null);
+  const micRecorderRef = useRef(null);
+  const micChunksRef = useRef([]);
   const [refPlaying, setRefPlaying] = useState(false);
   const [refTime, setRefTime] = useState(0);
   const [outPlaying, setOutPlaying] = useState(false);
@@ -174,6 +193,8 @@ export default function Synthesis() {
   const [result, setResult] = useState(null);
   const [resultDuration, setResultDuration] = useState(0);
   const [error, setError] = useState('');
+  const [isMicRecording, setIsMicRecording] = useState(false);
+  const [micStatus, setMicStatus] = useState('');
   // Emotion controls
   const [emotionControlMethod, setEmotionControlMethod] = useState('emotion_vector'); // 'same_as_ref', 'emotion_audio', 'emotion_vector', 'emotion_text'
   const [emotionVector, setEmotionVector] = useState([0, 0, 0, 0, 0, 0, 0, 0]); // [happy, angry, sad, afraid, disgusted, melancholic, surprised, calm]
@@ -274,20 +295,34 @@ export default function Synthesis() {
     a.click();
   };
 
+  const uploadVoiceReference = async (file, { selectAsEmotion = false } = {}) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiClient.post('/voice-refs/upload', formData);
+    const newRef = res.data;
+    setVoiceRefs(prev => [...prev, newRef]);
+
+    if (selectAsEmotion) {
+      setEmotionRefId(newRef.id.toString());
+      setEmotionRefUrl(`${apiBase}/static/voice_refs/${newRef.filename}`);
+      setEmotionUploadName(file.name);
+    } else {
+      setSelectedRef(newRef.id.toString());
+      setSelectedRefUrl(`${apiBase}/static/voice_refs/${newRef.filename}`);
+      setVoiceUploadName(file.name);
+    }
+
+    return newRef;
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setVoiceUploadName(file.name);
     setUploading(true);
     setError('');
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await apiClient.post('/voice-refs/upload', formData);
-      const newRef = res.data;
-      setVoiceRefs(prev => [...prev, newRef]);
-      setSelectedRef(newRef.id.toString());
-      setSelectedRefUrl(`${apiBase}/static/voice_refs/${newRef.filename}`);
+      await uploadVoiceReference(file);
     } catch (err) {
       setError(err.response?.data?.detail || 'Upload failed');
     } finally {
@@ -298,21 +333,71 @@ export default function Synthesis() {
   const handleEmotionFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setEmotionUploadName(file.name);
     setEmotionUploading(true);
     setError('');
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await apiClient.post('/voice-refs/upload', formData);
-      const newRef = res.data;
-      setVoiceRefs(prev => [...prev, newRef]);
-      setEmotionRefId(newRef.id.toString());
-      setEmotionRefUrl(`${apiBase}/static/voice_refs/${newRef.filename}`);
+      await uploadVoiceReference(file, { selectAsEmotion: true });
     } catch (err) {
       setError(err.response?.data?.detail || 'Emotion reference upload failed');
     } finally {
       setEmotionUploading(false);
+    }
+  };
+
+  const handleMicRecord = async () => {
+    if (isMicRecording) {
+      const recorder = micRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.stop();
+      }
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setError('Microphone recording is not supported in this browser.');
+      return;
+    }
+
+    setError('');
+    setMicStatus('Requesting microphone access for voice reference recording...');
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      micChunksRef.current = [];
+      micRecorderRef.current = recorder;
+      setIsMicRecording(true);
+      setMicStatus('Recording voice reference... click again to stop and upload.');
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          micChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(micChunksRef.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        setIsMicRecording(false);
+        setMicStatus('Uploading voice reference recording...');
+        try {
+          const file = new File([audioBlob], `mic-recording-${Date.now()}.webm`, { type: 'audio/webm' });
+          await uploadVoiceReference(file);
+          setMicStatus('Voice reference uploaded.');
+        } catch (err) {
+          setError(err.response?.data?.detail || 'Voice reference upload failed');
+          setMicStatus('');
+        } finally {
+          micRecorderRef.current = null;
+          micChunksRef.current = [];
+        }
+      };
+
+      recorder.start();
+    } catch (err) {
+      setIsMicRecording(false);
+      setMicStatus('');
+      setError('Could not access the microphone. Please allow mic permissions and try again.');
     }
   };
 
@@ -390,6 +475,8 @@ export default function Synthesis() {
                 subtitle="Fetching your uploaded voice clips and preparing the preview panel."
               />
             ) : null}
+            {isMicRecording ? <RecordingIndicator /> : null}
+            {micStatus ? <div className="mic-status">{micStatus}</div> : null}
             {selectedRefUrl ? (
               <>
                 <div className="wave-shell">
@@ -426,8 +513,9 @@ export default function Synthesis() {
               <UploadPlaceholder onFileSelect={handleFileUpload} />
             )}
             <div className="upload-tools">
-              <button type="button" className="ghost-tool">Upload</button>
-              <button type="button" className="ghost-tool">Mic</button>
+              <button type="button" className={`ghost-tool ${isMicRecording ? 'is-recording' : ''}`} onClick={handleMicRecord} disabled={uploading || emotionUploading}>
+                {isMicRecording ? 'Stop Recording' : 'Record Voice Reference'}
+              </button>
             </div>
             <div className="form-group">
               <label>Select Existing Reference</label>

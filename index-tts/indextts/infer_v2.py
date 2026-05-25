@@ -1,9 +1,21 @@
 import os
 from subprocess import CalledProcessError
 
-os.environ['HF_HUB_CACHE'] = './checkpoints/hf_cache'
-os.environ.setdefault('HF_HUB_OFFLINE', '1')
-os.environ.setdefault('TRANSFORMERS_OFFLINE', '1')
+_CHECKPOINT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints"))
+_DEFAULT_HF_CACHE = os.path.join(_CHECKPOINT_ROOT, ".cache", "huggingface")
+_DEFAULT_FEATURE_EXTRACTOR_DIR = os.path.join(_CHECKPOINT_ROOT, "w2v-bert-2.0-feature-extractor")
+_HF_CACHE_DIR = os.path.abspath(os.getenv("INDEXTTS2_HF_CACHE_DIR", _DEFAULT_HF_CACHE))
+_FEATURE_EXTRACTOR_DIR = os.path.abspath(os.getenv("INDEXTTS2_FEATURE_EXTRACTOR_DIR", _DEFAULT_FEATURE_EXTRACTOR_DIR))
+_ALLOW_HF_DOWNLOAD = os.getenv("INDEXTTS2_ALLOW_HF_DOWNLOAD", "true").lower() == "true"
+
+os.environ["HF_HUB_CACHE"] = _HF_CACHE_DIR
+if _ALLOW_HF_DOWNLOAD:
+    os.environ.pop("HF_HUB_OFFLINE", None)
+    os.environ.pop("TRANSFORMERS_OFFLINE", None)
+else:
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+    
 import json
 import re
 import time
@@ -114,16 +126,25 @@ class IndexTTS2:
                 print(f"{e!r}")
                 self.use_cuda_kernel = False
 
+        feature_extractor_source = "facebook/w2v-bert-2.0"
+        feature_extractor_local_only = not _ALLOW_HF_DOWNLOAD
+        local_feature_extractor_config = os.path.join(_FEATURE_EXTRACTOR_DIR, "preprocessor_config.json")
+        if os.path.exists(local_feature_extractor_config):
+            feature_extractor_source = _FEATURE_EXTRACTOR_DIR
+            feature_extractor_local_only = True
+            print(">> Using local w2v-bert-2.0 feature extractor from:", _FEATURE_EXTRACTOR_DIR)
+
         try:
             self.extract_features = SeamlessM4TFeatureExtractor.from_pretrained(
-                "facebook/w2v-bert-2.0",
-                cache_dir=os.path.join(self.model_dir, "hf_cache"),
-                local_files_only=True,
+                feature_extractor_source,
+                cache_dir=_HF_CACHE_DIR,
+                local_files_only=feature_extractor_local_only,
             )
         except Exception as exc:
             raise RuntimeError(
-                "Failed to load the local w2v-bert-2.0 feature extractor cache. "
-                "Make sure the checkpoints cache is present before running offline."
+                "Failed to load the w2v-bert-2.0 feature extractor. "
+                f"Checked cache_dir={_HF_CACHE_DIR!r} and feature_extractor_dir={_FEATURE_EXTRACTOR_DIR!r}. "
+                "If you want to use local-only mode, pre-populate the feature extractor directory or cache."
             ) from exc
         self.semantic_model, self.semantic_mean, self.semantic_std = build_semantic_model(
             os.path.join(self.model_dir, self.cfg.w2v_stat))

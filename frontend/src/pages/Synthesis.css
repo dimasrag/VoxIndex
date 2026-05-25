@@ -109,6 +109,103 @@
   cursor: pointer;
 }
 
+.ghost-tool.is-recording {
+  border-color: rgba(248, 113, 113, 0.7);
+  color: #fb7185;
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.mic-status {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(247, 115, 22, 0.25);
+  background: rgba(247, 115, 22, 0.08);
+  color: #f8c08a;
+  font-size: 0.84rem;
+}
+
+.recording-indicator {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  background: rgba(248, 113, 113, 0.08);
+  color: #ffd0d8;
+  font-size: 0.84rem;
+}
+
+.recording-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #fb7185;
+  box-shadow: 0 0 0 0 rgba(251, 113, 133, 0.5);
+  animation: recordingPulse 1.2s ease-in-out infinite;
+  flex: 0 0 auto;
+}
+
+.recording-label {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.recording-wave {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  min-width: 92px;
+}
+
+.recording-wave i {
+  width: 10px;
+  height: 3px;
+  border-radius: 999px;
+  background: #fb7185;
+  transform-origin: center;
+  animation: recordingWave 1s ease-in-out infinite;
+}
+
+.recording-wave i:nth-child(1) { animation-delay: 0s; }
+.recording-wave i:nth-child(2) { animation-delay: 0.08s; }
+.recording-wave i:nth-child(3) { animation-delay: 0.16s; }
+.recording-wave i:nth-child(4) { animation-delay: 0.24s; }
+.recording-wave i:nth-child(5) { animation-delay: 0.32s; }
+.recording-wave i:nth-child(6) { animation-delay: 0.4s; }
+.recording-wave i:nth-child(7) { animation-delay: 0.48s; }
+.recording-wave i:nth-child(8) { animation-delay: 0.56s; }
+
+@keyframes recordingPulse {
+  0% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(251, 113, 133, 0.45);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(251, 113, 133, 0);
+  }
+  100% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(251, 113, 133, 0);
+  }
+}
+
+@keyframes recordingWave {
+  0%, 100% {
+    transform: scaleY(0.45) scaleX(0.9);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1.8) scaleX(1);
+    opacity: 1;
+  }
+}
+
 .file-upload-row {
   display: flex;
   align-items: center;

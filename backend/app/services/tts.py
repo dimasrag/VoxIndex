@@ -31,6 +31,19 @@ class _IndexTTS2Engine:
         use_cuda_kernel = os.getenv("INDEXTTS2_USE_CUDA_KERNEL", "false").lower() == "true"
         use_deepspeed = os.getenv("INDEXTTS2_USE_DEEPSPEED", "false").lower() == "true"
 
+        cfg_abs_path = os.path.abspath(cfg_path)
+        model_dir_abs_path = os.path.abspath(model_dir)
+        logger.info(
+            "Initializing IndexTTS2 with cfg_path=%s (exists=%s), model_dir=%s (exists=%s), fp16=%s, cuda_kernel=%s, deepspeed=%s",
+            cfg_abs_path,
+            os.path.exists(cfg_abs_path),
+            model_dir_abs_path,
+            os.path.exists(model_dir_abs_path),
+            use_fp16,
+            use_cuda_kernel,
+            use_deepspeed,
+        )
+
         try:
             self._model = IndexTTS2(
                 cfg_path=cfg_path,
@@ -40,8 +53,9 @@ class _IndexTTS2Engine:
                 use_deepspeed=use_deepspeed,
             )
         except Exception as exc:  # pragma: no cover - model load depends on runtime env
+            logger.exception("IndexTTS2 initialization failed.")
             raise TTSServiceError(
-                "Failed to initialize IndexTTS2. Verify checkpoints path, CUDA setup, and model files."
+                f"Failed to initialize IndexTTS2. Verify checkpoints path, CUDA setup, and model files. Underlying error: {exc!r}"
             ) from exc
 
         return self._model
