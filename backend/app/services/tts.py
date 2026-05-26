@@ -31,6 +31,19 @@ class _IndexTTS2Engine:
         use_cuda_kernel = os.getenv("INDEXTTS2_USE_CUDA_KERNEL", "false").lower() == "true"
         use_deepspeed = os.getenv("INDEXTTS2_USE_DEEPSPEED", "false").lower() == "true"
 
+        cfg_abs_path = os.path.abspath(cfg_path)
+        model_dir_abs_path = os.path.abspath(model_dir)
+        logger.info(
+            "Initializing IndexTTS2 with cfg_path=%s (exists=%s), model_dir=%s (exists=%s), fp16=%s, cuda_kernel=%s, deepspeed=%s",
+            cfg_abs_path,
+            os.path.exists(cfg_abs_path),
+            model_dir_abs_path,
+            os.path.exists(model_dir_abs_path),
+            use_fp16,
+            use_cuda_kernel,
+            use_deepspeed,
+        )
+
         try:
             self._model = IndexTTS2(
                 cfg_path=cfg_path,
@@ -40,8 +53,9 @@ class _IndexTTS2Engine:
                 use_deepspeed=use_deepspeed,
             )
         except Exception as exc:  # pragma: no cover - model load depends on runtime env
+            logger.exception("IndexTTS2 initialization failed.")
             raise TTSServiceError(
-                "Failed to initialize IndexTTS2. Verify checkpoints path, CUDA setup, and model files."
+                f"Failed to initialize IndexTTS2. Verify checkpoints path, CUDA setup, and model files. Underlying error: {exc!r}"
             ) from exc
 
         return self._model
@@ -53,6 +67,7 @@ class _IndexTTS2Engine:
               use_emo_text: bool = False,
               emo_text: Optional[str] = None,
               use_random: bool = False,
+              max_text_tokens_per_segment: int = 160,
               interval_silence: int = 200) -> None:
         
         model = self._load()
@@ -75,6 +90,7 @@ class _IndexTTS2Engine:
             kwargs["emo_text"] = emo_text
         if use_random:
             kwargs["use_random"] = use_random
+        kwargs["max_text_tokens_per_segment"] = max_text_tokens_per_segment
         if interval_silence != 200:
             kwargs["interval_silence"] = interval_silence
 
@@ -99,6 +115,7 @@ def synthesize(text: str, voice_ref_path: str, output_path: str,
                use_emo_text: bool = False,
                emo_text: Optional[str] = None,
                use_random: bool = False,
+               max_text_tokens_per_segment: int = 160,
                interval_silence: int = 200) -> None:
     
     """Synthesize speech using configured provider.
@@ -125,6 +142,7 @@ def synthesize(text: str, voice_ref_path: str, output_path: str,
             use_emo_text=use_emo_text,
             emo_text=emo_text,
             use_random=use_random,
+            max_text_tokens_per_segment=max_text_tokens_per_segment,
             interval_silence=interval_silence,
         )
         return

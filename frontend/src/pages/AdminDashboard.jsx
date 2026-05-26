@@ -118,6 +118,18 @@ function StatusBadge({ status }) {
   return <span className={`admin-badge admin-badge-${status}`}>{status}</span>;
 }
 
+function ActivityStatusBadge({ item }) {
+  if (item.status === 'failed') {
+    return (
+      <span className="admin-badge admin-badge-failed admin-badge-code">
+        Error Code: {item.error_code || 'TTS_FAILED'}
+      </span>
+    );
+  }
+
+  return <StatusBadge status={item.status} />;
+}
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
@@ -499,7 +511,7 @@ export default function AdminDashboard() {
                             <tr key={item.id}>
                               <td>{item.user_id}</td>
                               <td>{item.voice_ref_id}</td>
-                              <td><StatusBadge status={item.status} /></td>
+                              <td><ActivityStatusBadge item={item} /></td>
                               <td>{formatDateOnly(item.created_at)}</td>
                             </tr>
                           ))}

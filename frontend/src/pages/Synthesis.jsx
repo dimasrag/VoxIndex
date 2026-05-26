@@ -120,6 +120,37 @@ const formatTime = (seconds) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+const LoadingCard = ({ title, subtitle }) => (
+  <div className="loading-card" role="status" aria-live="polite">
+    <div className="loading-spinner" aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </div>
+    <div className="loading-copy">
+      <strong>{title}</strong>
+      <span>{subtitle}</span>
+    </div>
+  </div>
+);
+
+const RecordingIndicator = () => (
+  <div className="recording-indicator" aria-live="polite" aria-label="Recording voice reference">
+    <span className="recording-dot" />
+    <span className="recording-label">Recording voice reference</span>
+    <span className="recording-wave" aria-hidden="true">
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+    </span>
+  </div>
+);
+
 const getAudioDuration = async (url) => {
   try {
     const response = await fetch(url);
@@ -136,6 +167,10 @@ const getAudioDuration = async (url) => {
 export default function Synthesis() {
   const refAudioRef = useRef(null);
   const outAudioRef = useRef(null);
+  const voiceUploadRef = useRef(null);
+  const emotionUploadRef = useRef(null);
+  const micRecorderRef = useRef(null);
+  const micChunksRef = useRef([]);
   const [refPlaying, setRefPlaying] = useState(false);
   const [refTime, setRefTime] = useState(0);
   const [outPlaying, setOutPlaying] = useState(false);
@@ -145,23 +180,39 @@ export default function Synthesis() {
   const [selectedRef, setSelectedRef] = useState('');
   const [selectedRefUrl, setSelectedRefUrl] = useState('');
   const [selectedRefDuration, setSelectedRefDuration] = useState(0);
+  const [emotionRefId, setEmotionRefId] = useState('');
+  const [emotionRefUrl, setEmotionRefUrl] = useState('');
+  const [emotionRefDuration, setEmotionRefDuration] = useState(0);
+  const [emotionText, setEmotionText] = useState('calm and natural');
+  const [voiceUploadName, setVoiceUploadName] = useState('No file chosen');
+  const [emotionUploadName, setEmotionUploadName] = useState('No file chosen');
   const [text, setText] = useState('El gato condujo el coche');
   const [uploading, setUploading] = useState(false);
+  const [emotionUploading, setEmotionUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [resultDuration, setResultDuration] = useState(0);
   const [error, setError] = useState('');
+  const [isMicRecording, setIsMicRecording] = useState(false);
+  const [micStatus, setMicStatus] = useState('');
   // Emotion controls
   const [emotionControlMethod, setEmotionControlMethod] = useState('emotion_vector'); // 'same_as_ref', 'emotion_audio', 'emotion_vector', 'emotion_text'
   const [emotionVector, setEmotionVector] = useState([0, 0, 0, 0, 0, 0, 0, 0]); // [happy, angry, sad, afraid, disgusted, melancholic, surprised, calm]
   const [useRandom, setUseRandom] = useState(false);
   const [randomIntensity, setRandomIntensity] = useState(0.5);
+  const [emotionStrength, setEmotionStrength] = useState(0.6);
+  const [maxTextTokensPerSegment, setMaxTextTokensPerSegment] = useState(160);
+  const [intervalSilence, setIntervalSilence] = useState(30);
+  const [refsLoading, setRefsLoading] = useState(true);
 
   useEffect(() => {
+    setRefsLoading(true);
     apiClient.get('/voice-refs/').then(res => {
       setVoiceRefs(res.data);
     }).catch(() => {
       setError("Could not fetch voice references.");
+    }).finally(() => {
+      setRefsLoading(false);
     });
   }, []);
 
@@ -178,6 +229,11 @@ export default function Synthesis() {
     if (selectedRefUrl) getAudioDuration(selectedRefUrl).then(setSelectedRefDuration);
     else setSelectedRefDuration(0);
   }, [selectedRefUrl]);
+
+  useEffect(() => {
+    if (emotionRefUrl) getAudioDuration(emotionRefUrl).then(setEmotionRefDuration);
+    else setEmotionRefDuration(0);
+  }, [emotionRefUrl]);
 
   useEffect(() => {
     if (result?.output_filename) {
@@ -239,23 +295,109 @@ export default function Synthesis() {
     a.click();
   };
 
+  const uploadVoiceReference = async (file, { selectAsEmotion = false } = {}) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiClient.post('/voice-refs/upload', formData);
+    const newRef = res.data;
+    setVoiceRefs(prev => [...prev, newRef]);
+
+    if (selectAsEmotion) {
+      setEmotionRefId(newRef.id.toString());
+      setEmotionRefUrl(`${apiBase}/static/voice_refs/${newRef.filename}`);
+      setEmotionUploadName(file.name);
+    } else {
+      setSelectedRef(newRef.id.toString());
+      setSelectedRefUrl(`${apiBase}/static/voice_refs/${newRef.filename}`);
+      setVoiceUploadName(file.name);
+    }
+
+    return newRef;
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
     setError('');
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await apiClient.post('/voice-refs/upload', formData);
-      const newRef = res.data;
-      setVoiceRefs(prev => [...prev, newRef]);
-      setSelectedRef(newRef.id.toString());
-      setSelectedRefUrl(`${apiBase}/static/voice_refs/${newRef.filename}`);
+      await uploadVoiceReference(file);
     } catch (err) {
       setError(err.response?.data?.detail || 'Upload failed');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleEmotionFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setEmotionUploading(true);
+    setError('');
+    try {
+      await uploadVoiceReference(file, { selectAsEmotion: true });
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Emotion reference upload failed');
+    } finally {
+      setEmotionUploading(false);
+    }
+  };
+
+  const handleMicRecord = async () => {
+    if (isMicRecording) {
+      const recorder = micRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.stop();
+      }
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setError('Microphone recording is not supported in this browser.');
+      return;
+    }
+
+    setError('');
+    setMicStatus('Requesting microphone access for voice reference recording...');
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      micChunksRef.current = [];
+      micRecorderRef.current = recorder;
+      setIsMicRecording(true);
+      setMicStatus('Recording voice reference... click again to stop and upload.');
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          micChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(micChunksRef.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        setIsMicRecording(false);
+        setMicStatus('Uploading voice reference recording...');
+        try {
+          const file = new File([audioBlob], `mic-recording-${Date.now()}.webm`, { type: 'audio/webm' });
+          await uploadVoiceReference(file);
+          setMicStatus('Voice reference uploaded.');
+        } catch (err) {
+          setError(err.response?.data?.detail || 'Voice reference upload failed');
+          setMicStatus('');
+        } finally {
+          micRecorderRef.current = null;
+          micChunksRef.current = [];
+        }
+      };
+
+      recorder.start();
+    } catch (err) {
+      setIsMicRecording(false);
+      setMicStatus('');
+      setError('Could not access the microphone. Please allow mic permissions and try again.');
     }
   };
 
@@ -272,12 +414,36 @@ export default function Synthesis() {
         voice_ref_id: parseInt(selectedRef),
       };
       
-      // Only send emotion params if using emotion vector method
+      if (emotionControlMethod === 'emotion_audio') {
+        if (!emotionRefId) {
+          setError('Please select or upload an emotion reference audio');
+          setSubmitting(false);
+          return;
+        }
+        payload.emo_voice_ref_id = parseInt(emotionRefId, 10);
+        payload.emo_alpha = emotionStrength;
+      }
+
       if (emotionControlMethod === 'emotion_vector') {
         payload.emo_vector = emotionVector;
-        payload.emo_alpha = 1.0; // emo_alpha is not used with manual vector control
+        payload.emo_alpha = emotionStrength;
         payload.use_random = useRandom;
       }
+
+      if (emotionControlMethod === 'emotion_text') {
+        if (!emotionText.trim()) {
+          setError('Please enter an emotion description');
+          setSubmitting(false);
+          return;
+        }
+        payload.use_emo_text = true;
+        payload.emo_text = emotionText.trim();
+        payload.emo_alpha = emotionStrength;
+        payload.use_random = useRandom;
+      }
+
+      payload.max_text_tokens_per_segment = maxTextTokensPerSegment;
+      payload.interval_silence = intervalSilence;
       
       const res = await apiClient.post('/synthesis/', payload);
       setResult(res.data);
@@ -303,6 +469,14 @@ export default function Synthesis() {
         <div className="synthesis-grid">
           <section className="synthesis-panel voice-panel">
             <div className="panel-chip">Voice reference</div>
+            {refsLoading && !selectedRefUrl ? (
+              <LoadingCard
+                title="Loading voice references"
+                subtitle="Fetching your uploaded voice clips and preparing the preview panel."
+              />
+            ) : null}
+            {isMicRecording ? <RecordingIndicator /> : null}
+            {micStatus ? <div className="mic-status">{micStatus}</div> : null}
             {selectedRefUrl ? (
               <>
                 <div className="wave-shell">
@@ -339,8 +513,9 @@ export default function Synthesis() {
               <UploadPlaceholder onFileSelect={handleFileUpload} />
             )}
             <div className="upload-tools">
-              <button type="button" className="ghost-tool">Upload</button>
-              <button type="button" className="ghost-tool">Mic</button>
+              <button type="button" className={`ghost-tool ${isMicRecording ? 'is-recording' : ''}`} onClick={handleMicRecord} disabled={uploading || emotionUploading}>
+                {isMicRecording ? 'Stop Recording' : 'Record Voice Reference'}
+              </button>
             </div>
             <div className="form-group">
               <label>Select Existing Reference</label>
@@ -353,7 +528,25 @@ export default function Synthesis() {
             </div>
             <div className="form-group">
               <label>Upload New Reference</label>
-              <input id="file-upload-input-button" type="file" accept="audio/*" onChange={handleFileUpload} disabled={uploading} />
+              <div className="file-upload-row">
+                <button
+                  type="button"
+                  className="file-upload-btn"
+                  onClick={() => voiceUploadRef.current?.click()}
+                  disabled={uploading}
+                >
+                  Choose file
+                </button>
+                <span className="file-upload-name">{voiceUploadName}</span>
+              </div>
+              <input
+                ref={voiceUploadRef}
+                type="file"
+                accept="audio/*"
+                onChange={handleFileUpload}
+                disabled={uploading}
+                style={{ display: 'none' }}
+              />
               {uploading && <span className="loading-text">Uploading...</span>}
             </div>
           </section>
@@ -415,7 +608,14 @@ export default function Synthesis() {
               </>
             ) : (
               <div className="result-placeholder">
-                {submitting ? 'Synthesizing...' : 'Result will appear here'}
+                {submitting ? (
+                  <LoadingCard
+                    title="Generating speech"
+                    subtitle="The model is working. This can take a while for longer text or slower hardware."
+                  />
+                ) : (
+                  <div className="result-placeholder-copy">Result will appear here</div>
+                )}
               </div>
             )}
           </section>
@@ -456,6 +656,107 @@ export default function Synthesis() {
               Use text description to control emotion
             </button>
           </div>
+
+          {emotionControlMethod !== 'same_as_ref' && (
+            <div className="slider-group" style={{ marginTop: '18px' }}>
+              <label>Emotion strength</label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={emotionStrength}
+                onChange={e => setEmotionStrength(parseFloat(e.target.value))}
+                className="emotion-slider"
+              />
+              <span>{emotionStrength.toFixed(2)}</span>
+            </div>
+          )}
+
+          {emotionControlMethod === 'same_as_ref' && (
+            <div className="settings-hint" style={{ marginTop: '18px' }}>
+              Uses the selected voice reference as the emotion reference, matching the default IndexTTS2 behavior.
+            </div>
+          )}
+
+          {emotionControlMethod === 'emotion_audio' && (
+            <div style={{ marginTop: '18px' }}>
+              <div className="settings-subtitle">Emotion reference audio</div>
+              {emotionRefUrl ? (
+                <div className="upload-preview" style={{ marginBottom: '12px' }}>
+                  <audio controls src={emotionRefUrl} style={{ width: '100%' }} />
+                  <div className="audio-controls" style={{ justifyContent: 'space-between' }}>
+                    <span>{formatTime(0)}</span>
+                    <span>{formatTime(emotionRefDuration)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="settings-hint" style={{ marginBottom: '12px' }}>
+                  Upload or choose a separate audio clip that represents the target emotion.
+                </div>
+              )}
+              <div className="form-group">
+                <label>Select emotion audio</label>
+                <select value={emotionRefId} onChange={e => setEmotionRefId(e.target.value)} disabled={emotionUploading}>
+                  <option value="">-- Select an emotion audio --</option>
+                  {voiceRefs.map(ref => (
+                    <option key={ref.id} value={ref.id}>{ref.original_name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Upload emotion audio</label>
+                <div className="file-upload-row">
+                  <button
+                    type="button"
+                    className="file-upload-btn"
+                    onClick={() => emotionUploadRef.current?.click()}
+                    disabled={emotionUploading}
+                  >
+                    Choose file
+                  </button>
+                  <span className="file-upload-name">{emotionUploadName}</span>
+                </div>
+                <input
+                  ref={emotionUploadRef}
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleEmotionFileUpload}
+                  disabled={emotionUploading}
+                  style={{ display: 'none' }}
+                />
+                {emotionUploading && <span className="loading-text">Uploading...</span>}
+              </div>
+            </div>
+          )}
+
+          {emotionControlMethod === 'emotion_text' && (
+            <div style={{ marginTop: '18px' }}>
+              <div className="settings-subtitle">Emotion description</div>
+              <div className="form-group">
+                <label>Describe the emotion</label>
+                <textarea
+                  value={emotionText}
+                  onChange={e => setEmotionText(e.target.value)}
+                  rows={4}
+                  placeholder="e.g. calm and reassuring, excited but gentle, sad and reflective"
+                />
+              </div>
+              <div className="settings-hint">
+                IndexTTS2 converts this description into emotion vectors automatically.
+              </div>
+              <div className="checkbox-group" style={{ marginTop: '12px' }}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={useRandom}
+                    onChange={e => setUseRandom(e.target.checked)}
+                  />
+                  Enable random emotion variation
+                </label>
+              </div>
+            </div>
+          )}
 
           {emotionControlMethod === 'emotion_vector' && (
             <>
@@ -623,6 +924,37 @@ export default function Synthesis() {
               </div>
             </>
           )}
+
+          <div className="settings-subtitle" style={{ marginTop: '24px' }}>Pacing</div>
+          <div className="slider-group">
+            <label>Text chunk size</label>
+            <input
+              type="range"
+              min="40"
+              max="220"
+              step="10"
+              value={maxTextTokensPerSegment}
+              onChange={e => setMaxTextTokensPerSegment(parseInt(e.target.value, 10))}
+              className="emotion-slider"
+            />
+            <span>{maxTextTokensPerSegment}</span>
+          </div>
+          <div className="slider-group" style={{ marginTop: '12px' }}>
+            <label>Pause between chunks (ms)</label>
+            <input
+              type="range"
+              min="0"
+              max="200"
+              step="10"
+              value={intervalSilence}
+              onChange={e => setIntervalSilence(parseInt(e.target.value, 10))}
+              className="emotion-slider"
+            />
+            <span>{intervalSilence}</span>
+          </div>
+          <div className="settings-hint" style={{ marginTop: '10px' }}>
+            Lower pause values reduce gaps between segments. Larger chunk sizes keep more text together.
+          </div>
         </div>
       </div>
     </div>

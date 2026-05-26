@@ -508,6 +508,10 @@
   text-transform: capitalize;
 }
 
+.admin-badge-code {
+  text-transform: none;
+}
+
 .admin-badge-completed,
 .admin-badge-admin {
   background: rgba(68, 214, 113, 0.16);
