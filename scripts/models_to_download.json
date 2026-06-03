@@ -1,0 +1,40 @@
+{
+  "repos": [
+    {
+      "local_src": "D:/!Codes/Indextts/VoxIndex/index-tts/checkpoints/config.yaml",
+      "dest": "S:/indextts/checkpoints"
+    },
+    {
+      "local_src": "D:/!Codes/Indextts/VoxIndex/index-tts/checkpoints/gpt.pth",
+      "dest": "S:/indextts/checkpoints"
+    },
+    {
+      "local_src": "D:/!Codes/Indextts/VoxIndex/index-tts/checkpoints/s2mel.pth",
+      "dest": "S:/indextts/checkpoints"
+    },
+    {
+      "local_src": "D:/!Codes/Indextts/VoxIndex/index-tts/checkpoints/bpe.model",
+      "dest": "S:/indextts/checkpoints"
+    },
+    {
+      "local_src": "D:/!Codes/Indextts/VoxIndex/index-tts/checkpoints/feat1.pt",
+      "dest": "S:/indextts/checkpoints"
+    },
+    {
+      "local_src": "D:/!Codes/Indextts/VoxIndex/index-tts/checkpoints/feat2.pt",
+      "dest": "S:/indextts/checkpoints"
+    },
+    {
+      "local_src": "D:/!Codes/Indextts/VoxIndex/index-tts/checkpoints/wav2vec2bert_stats.pt",
+      "dest": "S:/indextts/checkpoints"
+    },
+    {
+      "local_src": "D:/!Codes/Indextts/VoxIndex/index-tts/checkpoints/qwen0.6bemo4-merge",
+      "dest": "S:/indextts/checkpoints/qwen0.6bemo4-merge"
+    },
+    {
+      "local_src": "D:/!Codes/Indextts/VoxIndex/index-tts/checkpoints/w2v-bert-2.0-feature-extractor",
+      "dest": "S:/indextts/checkpoints/w2v-bert-2.0-feature-extractor"
+    }
+  ]
+}

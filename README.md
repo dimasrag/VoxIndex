@@ -96,6 +96,17 @@ npm run dev
 
 The app will be available at http://localhost:5173.
 
+## Public Deployment (Keep the GPU on Your PC)
+
+If you want other people to use the web app while the backend stays on your own machine, the simplest path is:
+
+1. Deploy the frontend to Vercel.
+2. Expose the backend with Cloudflare Tunnel (or ngrok).
+3. Point the frontend `VITE_API_URL` to the public backend URL.
+4. Add your frontend domain to `FRONTEND_ORIGINS` in the backend env.
+
+See [docs/DEPLOY_PUBLIC.md](docs/DEPLOY_PUBLIC.md) for the exact steps.
+
 ## API Overview
 
 | Method | Endpoint | Description |
