@@ -103,6 +103,11 @@ class _IndexTTS2Engine:
 _ENGINE = _IndexTTS2Engine()
 
 
+def warmup() -> None:
+    """Force model initialization without running inference."""
+    _ENGINE._load()
+
+
 def _stub_synthesize(voice_ref_path: str, output_path: str) -> None:
     """Development fallback: copies prompt audio as placeholder output."""
     shutil.copy2(voice_ref_path, output_path)

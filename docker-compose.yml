@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: indextts-backend:latest
+    restart: unless-stopped
+    # Request all available GPUs (Compose supports `gpus`)
+    gpus: all
+    volumes:
+      # IMPORTANT: adjust these host paths if your S: layout differs.
+      - "S:/indextts/checkpoints:/checkpoints:rw"
+      - "S:/indextts/hf_cache:/hf_cache:rw"
+      - "S:/indextts/outputs:/storage/outputs:rw"
+      - "./backend:/app:ro"
+    environment:
+      - INDEXTTS2_CONFIG_PATH=/checkpoints/config.yaml
+      - INDEXTTS2_MODEL_DIR=/checkpoints
+      - INDEXTTS2_HF_CACHE_DIR=/hf_cache
+      - INDEXTTS2_FEATURE_EXTRACTOR_DIR=/checkpoints/w2v-bert-2.0-feature-extractor
+      - INDEXTTS2_USE_FP16=true
+      - TTS_PROVIDER=indextts2
+      - DATABASE_URL=postgresql+psycopg2://indextts:indextts@db:5432/indextts
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=indextts
+      - POSTGRES_PASSWORD=indextts
+      - POSTGRES_DB=indextts
+    volumes:
+      - "S:/indextts/postgres:/var/lib/postgresql/data:rw"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U indextts"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

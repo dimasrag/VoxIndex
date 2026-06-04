@@ -11,7 +11,7 @@ from app.models.synthesis import SynthesisJob
 from app.models.voice_ref import VoiceReference
 from app.models.user import User
 from app.services.auth import get_current_user
-from app.services.tts import TTSServiceError, synthesize
+from app.services.tts import TTSServiceError, synthesize, warmup as tts_warmup
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +122,16 @@ def create_synthesis(
         "created_at": job.created_at,
         "error_message": error_message,
     }
+
+
+@router.post("/warmup")
+def warmup_synthesis_engine():
+    """Load the TTS engine and its model weights without synthesizing audio."""
+    try:
+        tts_warmup()
+        return {"status": "ok", "message": "IndexTTS2 warmup completed"}
+    except TTSServiceError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 @router.get("/")
 def list_synthesis_jobs(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

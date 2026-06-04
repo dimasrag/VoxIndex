@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 *.pyd
 .venv/
+.venv_dl/
 env/
 venv/
 
@@ -43,6 +44,9 @@ checkpoints/
 # Storage outputs and uploads (runtime)
 /storage/outputs/
 /storage/voice_refs/
+warmup_silence.wav
+storage/avatars/*.png
+
 # Python
 __pycache__/
 *.py[cod]
