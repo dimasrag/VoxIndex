@@ -15,6 +15,11 @@ from app.api import admin as admin_router
 
 app = FastAPI(title="Voice Synthesis API")
 
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok"}
+
 def _parse_origins(raw_origins: str):
     origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
     return origins or ["http://localhost:5173", "http://127.0.0.1:5173"]
