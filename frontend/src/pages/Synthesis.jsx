@@ -408,6 +408,31 @@ export default function Synthesis() {
     setSubmitting(true);
     setError('');
     setResult(null);
+
+    const normalizedText = text.trim().replace(/\//g, ' slash ').replace(/\\/g, ' slash ').replace(/\s+/g, ' ');
+
+    const recoverLatestCompletedJob = async () => {
+      try {
+        const historyRes = await apiClient.get('/synthesis/');
+        const recovered = historyRes.data.find(job => {
+          const jobText = (job.input_text || '').replace(/\//g, ' slash ').replace(/\\/g, ' slash ').replace(/\s+/g, ' ');
+          return job.status === 'completed'
+            && job.voice_ref_id === parseInt(selectedRef, 10)
+            && jobText === normalizedText;
+        });
+
+        if (recovered) {
+          setError('');
+          setResult(recovered);
+          return true;
+        }
+      } catch {
+        // ignore recovery failures and fall through to the original error
+      }
+
+      return false;
+    };
+
     try {
       const payload = {
         text,
@@ -448,7 +473,10 @@ export default function Synthesis() {
       const res = await apiClient.post('/synthesis/', payload);
       setResult(res.data);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Synthesis failed');
+      const recovered = await recoverLatestCompletedJob();
+      if (!recovered) {
+        setError(err.response?.data?.detail || 'Synthesis failed');
+      }
     } finally {
       setSubmitting(false);
     }

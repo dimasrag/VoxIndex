@@ -19,6 +19,7 @@ services:
       - INDEXTTS2_HF_CACHE_DIR=/hf_cache
       - INDEXTTS2_FEATURE_EXTRACTOR_DIR=/checkpoints/w2v-bert-2.0-feature-extractor
       - INDEXTTS2_USE_FP16=true
+      - INDEXTTS2_USE_CUDA_KERNEL=true
       - TTS_PROVIDER=indextts2
       - DATABASE_URL=postgresql+psycopg2://indextts:indextts@db:5432/indextts
       - FRONTEND_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://vox-index.vercel.app
