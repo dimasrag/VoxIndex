@@ -12,6 +12,7 @@ from app.api import auth as auth_router
 from app.api import voice_refs as voice_refs_router
 from app.api import synthesis as synthesis_router
 from app.api import admin as admin_router
+from app.services.tts import TTSServiceError, warmup as tts_warmup
 
 app = FastAPI(title="Voice Synthesis API")
 
@@ -80,6 +81,13 @@ async def startup_event():
     _ensure_avatar_column()
     os.makedirs(OUTPUTS_PATH, exist_ok=True)
     os.makedirs(VOICE_REFS_PATH, exist_ok=True)
+
+    if os.getenv("TTS_PROVIDER", "stub").strip().lower() == "indextts2":
+        try:
+            tts_warmup()
+        except TTSServiceError:
+            # Let the app start; the first request will surface the runtime error if warmup fails.
+            pass
 
 app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
 app.include_router(voice_refs_router.router, prefix="/api/voice-refs", tags=["voice-refs"])
