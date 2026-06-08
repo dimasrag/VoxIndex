@@ -23,6 +23,7 @@ services:
       - TTS_PROVIDER=indextts2
       - DATABASE_URL=postgresql+psycopg2://indextts:indextts@db:5432/indextts
       - FRONTEND_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://voxindex.vercel.app
+      - FRONTEND_ORIGIN_REGEX=^https://([a-z0-9-]+\.)*(vercel\.app|trycloudflare\.com)$
     ports:
       - "8000:8000"
 
