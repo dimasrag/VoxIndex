@@ -13,6 +13,7 @@ from app.api import auth as auth_router
 from app.api import voice_refs as voice_refs_router
 from app.api import synthesis as synthesis_router
 from app.api import admin as admin_router
+from app.api import sample as sample_router
 from app.services.tts import TTSServiceError, warmup as tts_warmup
 
 app = FastAPI(title="Voice Synthesis API")
@@ -24,11 +25,11 @@ def health_check():
 
 def _parse_origins(raw_origins: str):
     origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
-    return origins or ["http://localhost:5173", "http://127.0.0.1:5173"]
+    return origins or ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:5175", "http://127.0.0.1:5175"]
 
 
 frontend_origins = _parse_origins(
-    os.getenv("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+    os.getenv("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5175,http://127.0.0.1:5175")
 )
 
 frontend_origin_regex = os.getenv(
@@ -83,7 +84,7 @@ async def startup_event():
     os.makedirs(OUTPUTS_PATH, exist_ok=True)
     os.makedirs(VOICE_REFS_PATH, exist_ok=True)
 
-    if os.getenv("TTS_PROVIDER", "stub").strip().lower() == "indextts2":
+    if os.getenv("TTS_PROVIDER", "indextts2").strip().lower() == "indextts2":
         try:
             tts_warmup()
         except TTSServiceError:
@@ -94,3 +95,4 @@ app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
 app.include_router(voice_refs_router.router, prefix="/api/voice-refs", tags=["voice-refs"])
 app.include_router(synthesis_router.router, prefix="/api/synthesis", tags=["synthesis"])
 app.include_router(admin_router.router, prefix="/api/admin", tags=["admin"])
+app.include_router(sample_router.router, prefix="/api/sample", tags=["sample"])
