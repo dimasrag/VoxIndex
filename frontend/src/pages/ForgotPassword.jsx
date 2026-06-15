@@ -44,11 +44,10 @@ export default function ForgotPassword() {
         {success && <div className="success-msg">{success}</div>}
         {resetUrl && (
           <div className="success-msg reset-link-box">
-            <div className="reset-link-label">Local reset link</div>
-            <a className="reset-link-url" href={resetUrl} target="_blank" rel="noreferrer">
-              {resetUrl}
-            </a>
-            <div className="reset-link-hint">Open this link to reset the password immediately.</div>
+            <div className="reset-link-label">
+              Reset link: <a className="reset-link-url" href={resetUrl} target="_blank" rel="noreferrer">here</a>
+            </div>
+            <div className="reset-link-hint">Open it to reset the password immediately.</div>
           </div>
         )}
         <form onSubmit={handleSubmit}>
