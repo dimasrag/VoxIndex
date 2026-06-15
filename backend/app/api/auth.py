@@ -6,7 +6,15 @@ from app.models import get_db
 from typing import Optional
 from app.models.user import User
 from app.api.admin import clear_cached_stats
-from app.services.auth import get_password_hash, verify_password, create_access_token, get_current_user
+from app.services.auth import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    get_current_user,
+    create_password_reset_token,
+    verify_password_reset_token,
+)
+from app.services.email import send_password_reset_email
 import shutil
 import uuid
 import os
@@ -40,6 +48,15 @@ class UpdateProfileRequest(BaseModel):
     email: Optional[EmailStr] = None
     password: Optional[str] = None
 
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
     if db.query(User).filter(User.username == req.username).first():
@@ -57,6 +74,57 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     clear_cached_stats("users_growth_")
     clear_cached_stats("overview")
     return {"id": user.id, "username": user.username, "email": user.email}
+
+
+@router.post("/forgot-password")
+def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    email = req.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if user:
+        frontend_url = os.getenv("FRONTEND_APP_URL", "http://localhost:5173").rstrip("/")
+        reset_token = create_password_reset_token(user.email)
+        reset_url = f"{frontend_url}/reset-password?token={reset_token}"
+        try:
+            delivery_result = send_password_reset_email(user.email, reset_url)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=(
+                    "Could not send reset email. Configure EMAIL_PROVIDER and, for SMTP, "
+                    "SMTP_HOST, SMTP_PORT, SMTP_USERNAME, and SMTP_PASSWORD in backend/.env. "
+                    f"Original error: {exc}"
+                ),
+            ) from exc
+
+        response = {"message": "If the email exists, a password reset link has been sent."}
+        if isinstance(delivery_result, dict) and delivery_result.get("reset_url"):
+            response["reset_url"] = delivery_result["reset_url"]
+            response["delivery_provider"] = delivery_result.get("provider", "local")
+        return response
+
+    return {"message": "If the email exists, a password reset link has been sent."}
+
+
+@router.post("/reset-password")
+def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+    try:
+        email = verify_password_reset_token(req.token)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 6 characters")
+
+    if verify_password(req.new_password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password cannot be the same as the old password")
+
+    user.hashed_password = get_password_hash(req.new_password)
+    db.commit()
+    return {"message": "Password reset successfully"}
 
 @router.post("/login", response_model=TokenResponse)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
