@@ -80,10 +80,17 @@ export default function Navbar() {
       )}
 
       {!token && !isHome && (
+        <>
         <div className="navbar-links">
-          <Link to="/login">Login</Link>
-          <Link to="/register">Register</Link>
+          <Link to="/home" className="navbar-link-btn">Start</Link>
+          <Link to="/sample" className="navbar-link-btn">Sample</Link>
+          <button type="button" className="navbar-link-btn" onClick={() => scrollToSection('about')}>About</button>
+          <button type="button" className="navbar-link-btn" onClick={() => window.open('https://github.com/dimasrag/VoxIndex', '_blank')} title = "View source code">
+            <img src={githubIcon} alt="GitHub" height={18} />
+          </button>
         </div>
+        <div style={{ flex: 1 }} />
+        </>
       )}
 
       {token && (
