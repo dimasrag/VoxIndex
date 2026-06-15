@@ -81,8 +81,8 @@ export default function Navbar() {
 
       {!token && !isHome && (
         <div className="navbar-links">
-          <Link to="/home">Home</Link>
-          <Link to="/sample">Sample</Link>
+          <Link to="/login">Login</Link>
+          <Link to="/register">Register</Link>
         </div>
       )}
 
