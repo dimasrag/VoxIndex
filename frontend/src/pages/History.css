@@ -8,6 +8,13 @@
   padding-bottom: 3rem;
 }
 
+.sample-page-intro {
+  max-width: 900px;
+  margin: -0.75rem auto 1.5rem;
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
 .sample-page-header {
   max-width: 900px;
   margin: 0 auto 1.5rem;

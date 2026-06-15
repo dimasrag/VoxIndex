@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.get("/history")
 def get_sample_history(db: Session = Depends(get_db)):
-	sample_username = os.getenv("SAMPLE_USERNAME", "voxindex_demo").strip()
+	sample_username = os.getenv("SAMPLE_USERNAME", "sample").strip()
 	user = None
 
 	if sample_username:

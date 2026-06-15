@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import apiClient from '../api/client';
 import './History.css';
 
@@ -35,52 +35,12 @@ export default function Sample() {
     };
   }, []);
 
-  const user = sampleData.user;
   const jobs = sampleData.jobs || [];
-
-  const initials = useMemo(() => {
-    if (!user?.username) {
-      return 'SD';
-    }
-
-    return user.username
-      .split(/[_\s.-]+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join('') || 'SD';
-  }, [user?.username]);
-
-  const completedJobs = user?.completed_jobs ?? jobs.filter((job) => job.status === 'completed').length;
-  const totalJobs = user?.total_jobs ?? jobs.length;
 
   return (
     <div className="page-container sample-page">
-      <div className="sample-page-header">
-        <div className="sample-profile-card">
-          <div className="sample-avatar" aria-hidden="true">
-            {initials}
-          </div>
-          <div className="sample-profile-copy">
-            <div className="sample-profile-row">
-              <h1>{user?.username || 'Sample user history'}</h1>
-              <span className="sample-profile-badge">Sample</span>
-            </div>
-            <p className="sample-profile-handle">@{user?.username || 'loading'}</p>
-            <p className="sample-profile-note">
-              {user?.email
-                ? `Public preview of ${user.email}'s generated history.`
-                : 'Public preview of a sample account’s generated history.'}
-            </p>
-            <div className="sample-profile-meta">
-              <span><strong>{totalJobs}</strong> jobs</span>
-              <span><strong>{completedJobs}</strong> completed</span>
-              <span><strong>{user?.last_active ? new Date(user.last_active).toLocaleString() : '—'}</strong> last active</span>
-            </div>
-            <p className="sample-profile-email">{user?.email || 'Waiting for sample account data'}</p>
-          </div>
-        </div>
-      </div>
+      <h1>Sample</h1>
+      <p className="sample-page-intro">Public preview of generated history.</p>
 
       <div className="history-list" aria-label="Sample synthesis history">
         {loading ? (
