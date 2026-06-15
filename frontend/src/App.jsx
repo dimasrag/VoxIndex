@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Synthesis from './pages/Synthesis';
 import History from './pages/History';
+import Sample from './pages/Sample';
 import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/synthesis" element={<ProtectedRoute><Synthesis /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+          <Route path="/sample" element={<Sample />} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         </Routes>

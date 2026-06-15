@@ -130,9 +130,9 @@ def synthesize(text: str, voice_ref_path: str, output_path: str,
     """Synthesize speech using configured provider.
 
     Env:
-    - TTS_PROVIDER: "stub" (default) or "indextts2"
+    - TTS_PROVIDER: "indextts2" (default) or "stub"
     """
-    provider = os.getenv("TTS_PROVIDER", "stub").strip().lower()
+    provider = os.getenv("TTS_PROVIDER", "indextts2").strip().lower()
     logger.info(f"TTS_PROVIDER={provider}")
     if provider == "stub":
         logger.info("Using stub synthesizer")
