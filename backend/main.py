@@ -5,7 +5,8 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import inspect, text
 
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+env_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(env_path)
 
 from app.models import Base, engine
 from app.api import auth as auth_router
