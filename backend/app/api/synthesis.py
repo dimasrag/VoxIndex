@@ -27,6 +27,7 @@ def _normalize_text(text: str) -> str:
 class SynthesisRequest(BaseModel):
     voice_ref_id: int
     text: str
+    language: Optional[str] = None
     emo_voice_ref_id: Optional[int] = None
     emo_vector: Optional[list] = None  # 8-float emotion vector [happy, angry, sad, afraid, disgusted, melancholic, surprised, calm]
     emo_alpha: float = 1.0  # emotion strength: 0.0 to 1.0
@@ -50,6 +51,8 @@ def create_synthesis(
         raise HTTPException(status_code=422, detail="Text must not be empty")
     if len(cleaned_text) > 2000:
         raise HTTPException(status_code=422, detail="Text length must be 2000 characters or fewer")
+
+    language = (req.language or "en").strip().lower() or "en"
 
     voice_ref = db.query(VoiceReference).filter(
         VoiceReference.id == req.voice_ref_id,
@@ -75,6 +78,7 @@ def create_synthesis(
         user_id=current_user.id,
         voice_ref_id=voice_ref.id,
         input_text=cleaned_text,
+        language=language,
         output_filename=output_filename,
         output_path=output_path,
         status="pending",
@@ -90,6 +94,7 @@ def create_synthesis(
             cleaned_text,
             voice_ref.file_path,
             output_path,
+            language=language,
             emo_audio_prompt=emo_voice_ref.file_path if emo_voice_ref else None,
             emo_vector=req.emo_vector,
             emo_alpha=req.emo_alpha,
@@ -117,6 +122,7 @@ def create_synthesis(
     return {
         "id": job.id,
         "status": job.status,
+        "language": job.language,
         "output_filename": job.output_filename,
         "input_text": job.input_text,
         "created_at": job.created_at,
@@ -129,7 +135,12 @@ def warmup_synthesis_engine():
     """Load the TTS engine and its model weights without synthesizing audio."""
     try:
         tts_warmup()
-        return {"status": "ok", "message": "IndexTTS2 warmup completed"}
+        provider = os.getenv("TTS_PROVIDER", "indextts2").strip().lower()
+        if provider == "auto":
+            provider_name = "IndexTTS2 + Confucius4-TTS"
+        else:
+            provider_name = "Confucius4-TTS" if provider == "confucius4" else "IndexTTS2"
+        return {"status": "ok", "message": f"{provider_name} warmup completed"}
     except TTSServiceError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -140,6 +151,7 @@ def list_synthesis_jobs(current_user: User = Depends(get_current_user), db: Sess
         {
             "id": j.id,
             "status": j.status,
+            "language": j.language,
             "output_filename": j.output_filename,
             "input_text": j.input_text,
             "voice_ref_id": j.voice_ref_id,

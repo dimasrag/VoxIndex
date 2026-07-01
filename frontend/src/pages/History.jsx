@@ -62,6 +62,9 @@ export default function History() {
                   <span className={`status-badge status-${job.status}`}>{job.status}</span>
                   <span className="history-date">{new Date(job.created_at).toLocaleString()}</span>
                 </div>
+                {job.language && (
+                  <p className="history-language">Language: {job.language.toUpperCase()}</p>
+                )}
                 <p className="history-text">{job.input_text}</p>
                 {job.status === 'completed' && job.output_filename && (
                   <>

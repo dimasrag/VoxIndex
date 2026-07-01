@@ -9,6 +9,7 @@ class SynthesisJob(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     voice_ref_id = Column(Integer, ForeignKey("voice_references.id"), nullable=False)
     input_text = Column(Text, nullable=False)
+    language = Column(String(16), nullable=True)
     output_filename = Column(String, nullable=True)
     output_path = Column(String, nullable=True)
     status = Column(String, default="pending")  # pending/completed/failed

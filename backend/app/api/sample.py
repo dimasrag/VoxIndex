@@ -56,6 +56,7 @@ def get_sample_history(db: Session = Depends(get_db)):
 				"id": job.id,
 				"input_text": job.input_text,
 				"status": job.status,
+				"language": job.language,
 				"created_at": job.created_at,
 				"output_filename": job.output_filename,
 				"duration_seconds": job.duration_seconds,

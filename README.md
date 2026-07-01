@@ -2,7 +2,7 @@
 
 A full-stack web application for text-to-speech workflows, built with FastAPI (backend), React + Vite (frontend), and PostgreSQL (database).
 
-This repository currently runs an end-to-end MVP flow (auth, upload voice reference, synthesis job, history, audio playback/download). The current TTS service is a development stub and can be replaced with real IndexTTS2 inference later.
+This repository currently runs an end-to-end MVP flow (auth, upload voice reference, synthesis job, history, audio playback/download). The TTS service now supports IndexTTS2 for English and Confucius4-TTS for multilingual synthesis, while keeping VoxIndex as the app shell.
 
 For a step-by-step startup guide, see [docs/START_HERE.md](docs/START_HERE.md).
 
@@ -146,16 +146,19 @@ If these planned features are included in thesis diagrams, mark them as Proposed
 
 ## Notes
 
-- The backend supports `stub` and `indextts2` synthesis providers. `stub` copies the voice reference as placeholder output for development.
+- The backend supports `stub`, `indextts2`, `confucius4`, and `auto` synthesis providers. `stub` copies the voice reference as placeholder output for development.
+- `indextts2` is the default smart route: English goes through IndexTTS2, Indonesian and other Confucius4-supported languages go through Confucius4-TTS, and other non-English languages fall back to IndexTTS2.
 - Audio files are stored in `storage/voice_refs/` and `storage/outputs/`.
 - JWT tokens expire after 60 minutes by default (configurable via `ACCESS_TOKEN_EXPIRE_MINUTES`).
 
 ## TTS Provider Configuration
 
-Backend supports two synthesis providers via `.env`:
+Backend supports four synthesis providers via `.env`:
 
 - `TTS_PROVIDER=stub`: Development mode (copies voice reference as placeholder output)
-- `TTS_PROVIDER=indextts2`: Uses real IndexTTS2 inference
+- `TTS_PROVIDER=indextts2`: Smart routing, English uses IndexTTS2, Indonesian uses Confucius4-TTS, and other non-English languages fall back to IndexTTS2
+- `TTS_PROVIDER=confucius4`: Uses Confucius4-TTS directly
+- `TTS_PROVIDER=auto`: Same smart routing as `indextts2`
 
 When using `indextts2`, set:
 
@@ -164,6 +167,15 @@ When using `indextts2`, set:
 - `INDEXTTS2_USE_FP16` (`true`/`false`)
 - `INDEXTTS2_USE_CUDA_KERNEL` (`true`/`false`)
 - `INDEXTTS2_USE_DEEPSPEED` (`true`/`false`)
+
+When using `confucius4`, set:
+
+- `CONFUCIUS4_REPO_PATH` (default: `../confucius4-tts`)
+- `CONFUCIUS4_CONFIG_PATH` (default: `../confucius4-tts/config/inference_config.yaml`)
+- `CONFUCIUS4_T2S_CHECKPOINT` (optional override for the T2S checkpoint path)
+- `CONFUCIUS4_DEVICE` (`cuda`/`cpu`)
+
+The synthesis request accepts a `language` field so the frontend can choose the target language for multilingual providers.
 
 ## IndexTTS2 (Model) Setup
 
@@ -201,6 +213,23 @@ After downloading, point the backend env values to the model location (example `
 INDEXTTS2_CONFIG_PATH=../index-tts/checkpoints/config.yaml
 INDEXTTS2_MODEL_DIR=../index-tts/checkpoints
 ```
+
+## Confucius4-TTS (Multilingual) Setup
+
+For Indonesian and other multilingual synthesis, clone the official Confucius4-TTS repo next to this app so the backend can import it locally:
+
+```powershell
+git clone https://github.com/netease-youdao/Confucius4-TTS.git ..\confucius4-tts
+```
+
+Then set these env vars in `backend/.env`:
+
+- `CONFUCIUS4_REPO_PATH=../confucius4-tts`
+- `CONFUCIUS4_CONFIG_PATH=../confucius4-tts/config/inference_config.yaml`
+- `CONFUCIUS4_T2S_CHECKPOINT=<path to your local t2s checkpoint>`
+- `CONFUCIUS4_DEVICE=cuda` or `cpu`
+
+If you want Indonesian to work, use a `language` value of `id` in the synthesis request.
 
 Security & repo notes:
 - Do NOT commit the `index-tts` repo or `checkpoints/` to this repository — they are large and should be kept out of version control.

@@ -76,15 +76,24 @@ def _ensure_avatar_column():
             connection.execute(text("ALTER TABLE users ADD COLUMN avatar_filename VARCHAR"))
 
 
+def _ensure_synthesis_language_column():
+    with engine.begin() as connection:
+        inspector = inspect(connection)
+        synthesis_columns = {column["name"] for column in inspector.get_columns("synthesis_jobs")}
+        if "language" not in synthesis_columns:
+            connection.execute(text("ALTER TABLE synthesis_jobs ADD COLUMN language VARCHAR(16)"))
+
+
 @app.on_event("startup")
 async def startup_event():
     Base.metadata.create_all(bind=engine)
     _ensure_user_admin_column()
     _ensure_avatar_column()
+    _ensure_synthesis_language_column()
     os.makedirs(OUTPUTS_PATH, exist_ok=True)
     os.makedirs(VOICE_REFS_PATH, exist_ok=True)
 
-    if os.getenv("TTS_PROVIDER", "indextts2").strip().lower() == "indextts2":
+    if os.getenv("TTS_PROVIDER", "indextts2").strip().lower() in {"indextts2", "confucius4", "auto"}:
         try:
             tts_warmup()
         except TTSServiceError:

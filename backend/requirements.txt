@@ -10,3 +10,4 @@ aiofiles
 python-dotenv
 pydantic[email]
 alembic
+TTS

@@ -16,6 +16,22 @@ const EMOTION_PRESETS = {
   surprised: [0.5, 0.0, 0.0, 0.3, 0.0, 0.0, 1.0, 0.0],
 };
 
+const LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English' },
+  { value: 'id', label: 'Indonesian' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'fr', label: 'French' },
+  { value: 'de', label: 'German' },
+  { value: 'it', label: 'Italian' },
+  { value: 'pt', label: 'Portuguese' },
+  { value: 'nl', label: 'Dutch' },
+  { value: 'ru', label: 'Russian' },
+  { value: 'tr', label: 'Turkish' },
+  { value: 'ja', label: 'Japanese' },
+  { value: 'zh-cn', label: 'Chinese (Simplified)' },
+  { value: 'ko', label: 'Korean' },
+];
+
 const Waveform = ({ audioUrl, currentTime, duration, onSeek }) => {
   const canvasRef = useRef(null);
   const ampsRef = useRef([]);
@@ -184,6 +200,7 @@ export default function Synthesis() {
   const [emotionRefUrl, setEmotionRefUrl] = useState('');
   const [emotionRefDuration, setEmotionRefDuration] = useState(0);
   const [emotionText, setEmotionText] = useState('calm and natural');
+  const [language, setLanguage] = useState('en');
   const [voiceUploadName, setVoiceUploadName] = useState('No file chosen');
   const [emotionUploadName, setEmotionUploadName] = useState('No file chosen');
   const [text, setText] = useState('El gato condujo el coche');
@@ -418,6 +435,7 @@ export default function Synthesis() {
           const jobText = (job.input_text || '').replace(/\//g, ' slash ').replace(/\\/g, ' slash ').replace(/\s+/g, ' ');
           return job.status === 'completed'
             && job.voice_ref_id === parseInt(selectedRef, 10)
+            && (job.language || 'en') === language
             && jobText === normalizedText;
         });
 
@@ -437,6 +455,7 @@ export default function Synthesis() {
       const payload = {
         text,
         voice_ref_id: parseInt(selectedRef),
+        language,
       };
       
       if (emotionControlMethod === 'emotion_audio') {
@@ -582,6 +601,14 @@ export default function Synthesis() {
           <section className="synthesis-panel text-panel">
             <div className="panel-chip">Text</div>
             <p className="model-version">Current model version 2.0</p>
+            <div className="form-group">
+              <label>Target language</label>
+              <select value={language} onChange={e => setLanguage(e.target.value)}>
+                {LANGUAGE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
             <textarea
               value={text}
               onChange={e => setText(e.target.value)}
