@@ -1,5 +1,9 @@
 # Frontend (VoxIndex)
 
+<p align="center">
+	<img src="src/assets/Logo.png" alt="VoxIndex logo" width="200" />
+</p>
+
 React + Vite frontend for authentication, synthesis input, and synthesis history.
 
 ## Requirements

@@ -1,5 +1,9 @@
 # VoxIndex
 
+<p align="center">
+    <img src="frontend/src/assets/Logo.png" alt="VoxIndex logo" width="220" />
+</p>
+
 A full-stack web application for text-to-speech workflows, built with FastAPI (backend), React + Vite (frontend), and PostgreSQL (database).
 
 This repository currently runs an end-to-end MVP flow (auth, upload voice reference, synthesis job, history, audio playback/download). The current TTS service is a development stub and can be replaced with real IndexTTS2 inference later.
