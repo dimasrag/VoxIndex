@@ -10,7 +10,7 @@ This repository currently runs an end-to-end MVP flow (auth, upload voice refere
 
 For a step-by-step startup guide, see [docs/START_HERE.md](docs/START_HERE.md).
 
-## Tech Stack
+## Prerequisites
 
 - Backend: FastAPI, SQLAlchemy, Uvicorn, python-jose, passlib
 - Frontend: React 19, Vite 7, React Router 7, Axios
