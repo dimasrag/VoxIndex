@@ -1,40 +1,62 @@
-# Frontend (VoxIndex)
+# VoxIndex Frontend
 
-React + Vite frontend for authentication, synthesis input, and synthesis history.
+<p align="center">
+	<img src="src/assets/logo_github.png" alt="VoxIndex logo" width="200" />
+</p>
+
+React + Vite client application for VoxIndex.
 
 ## Requirements
 
-- Node.js 20.19+ or 22.12+
+- Node.js 20+
 - npm 10+
 
 ## Setup
 
-```bash
+```powershell
 cd frontend
 npm install
 copy .env.example .env
 npm run dev
 ```
 
-App runs at http://localhost:5173 by default.
+Default app URL: http://localhost:5173
 
 ## Environment
 
-- VITE_API_URL: backend API base URL (default in .env.example points to http://localhost:8000/api)
+Template: [frontend/.env.example](.env.example)
+
+Main variable:
+- `VITE_API_URL` (example: `http://localhost:8000/api`)
 
 ## Scripts
 
-- npm run dev: start development server
-- npm run build: build production bundle
-- npm run preview: preview production build
-- npm run lint: run ESLint
+- `npm run dev` start dev server
+- `npm run build` build production bundle
+- `npm run preview` preview production build
+- `npm run lint` run ESLint
 
-## Current Pages
+## Implemented Routes
 
-- /login
-- /register
-- /dashboard
-- /synthesis
-- /history
+Public:
+- `/home`
+- `/login`
+- `/register`
+- `/forgot-password`
+- `/reset-password`
+- `/sample`
 
-Planned pages from thesis (not fully implemented yet): profile, forgot password, admin dashboard pages.
+Authenticated:
+- `/dashboard`
+- `/synthesis`
+- `/history`
+- `/profile`
+
+Admin only:
+- `/admin`
+
+## Notes
+
+- Auth token is stored in local storage and attached as `Authorization: Bearer ...`.
+- When backend returns `401`, the app clears token and redirects to login.
+- Static audio playback URLs are resolved from the backend base URL (`/static/outputs/...`).
